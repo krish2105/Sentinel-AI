@@ -26,6 +26,12 @@ out/
 .vercel/
 *.tsbuildinfo
 
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/
+
 # OS / editor
 .DS_Store
 Thumbs.db

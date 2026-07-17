@@ -46,6 +46,7 @@ def _serialize(run, attacks, target) -> dict:
                 "citation": a.citation, "mitigation": a.mitigation,
                 "blast_radius": a.blast_radius,
                 "injection_vector": getattr(a, "injection_vector", "direct"),
+                "turns": getattr(a, "turns", 1),
             }
             for a in attacks
         ],
@@ -99,46 +100,127 @@ async def export_pdf(
 
 
 def _render_pdf(data: dict) -> bytes:  # pragma: no cover - optional dep
+    """A styled, multi-section PDF via reportlab platypus (not plaintext lines)."""
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas
+    from reportlab.platypus import (
+        HRFlowable,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+
+    INK = colors.HexColor("#0C1220")
+    TEAL = colors.HexColor("#0D9488")
+    MUTED = colors.HexColor("#5A6478")
+    LINE = colors.HexColor("#D6DEEA")
+    SEV_COLOR = {
+        "CRITICAL": colors.HexColor("#DC2637"),
+        "HIGH": colors.HexColor("#E4632B"),
+        "MEDIUM": colors.HexColor("#B47806"),
+        "LOW": colors.HexColor("#5A6478"),
+    }
+    VERDICT_COLOR = {
+        "HIJACKED": colors.HexColor("#DC2637"),
+        "LEAKED": colors.HexColor("#B47806"),
+        "BLOCKED": TEAL,
+        "SAFE": TEAL,
+    }
+
+    rep = data.get("report", {}) or {}
+    styles = getSampleStyleSheet()
+    body = ParagraphStyle("body", parent=styles["Normal"], fontSize=9, textColor=INK, leading=12)
+    small = ParagraphStyle("small", parent=body, fontSize=7.5, textColor=MUTED, leading=9)
+    h1 = ParagraphStyle("h1", parent=styles["Title"], fontSize=22, textColor=INK, spaceAfter=2)
+    h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, textColor=INK, spaceBefore=10, spaceAfter=4)
+    score_style = ParagraphStyle("score", parent=styles["Title"], fontSize=48, textColor=TEAL, alignment=TA_CENTER)
 
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    width, height = A4
-    y = height - 25 * mm
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=18 * mm, bottomMargin=16 * mm,
+        leftMargin=18 * mm, rightMargin=18 * mm, title="Sentinel AI Security Report",
+    )
+    story = []
 
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(20 * mm, y, "Sentinel AI — Security Report")
-    y -= 12 * mm
-    c.setFont("Helvetica", 11)
-    c.drawString(20 * mm, y, f"Target: {data['target']['name']}")
-    y -= 7 * mm
-    c.drawString(20 * mm, y, f"Posture Score: {data['posture_score']}/100")
-    y -= 7 * mm
-    rep = data.get("report", {}) or {}
-    c.drawString(20 * mm, y, f"Attack Success Rate: {rep.get('attack_success_rate', 0)*100:.0f}%")
-    y -= 12 * mm
+    story.append(Paragraph("🛡️ Sentinel AI — Security Report", h1))
+    story.append(Paragraph(
+        f"Target: <b>{_esc(data['target']['name'])}</b> · Run {_esc(str(data['run_id'])[:8])}", body))
+    story.append(HRFlowable(width="100%", thickness=1, color=LINE, spaceBefore=6, spaceAfter=10))
 
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(20 * mm, y, "Findings")
-    y -= 8 * mm
-    c.setFont("Helvetica", 9)
+    # Posture scorecard + summary metrics.
+    story.append(Paragraph(f"{data['posture_score']}<font size=16>/100</font>", score_style))
+    story.append(Paragraph("SECURITY POSTURE SCORE", ParagraphStyle(
+        "cap", parent=small, alignment=TA_CENTER, spaceAfter=8)))
+
+    summary = [
+        ["Total attacks", str(rep.get("total_attacks", len(data["attacks"])))],
+        ["Successful exploits", str(rep.get("successful_attacks", 0))],
+        ["Attack-success rate", f"{rep.get('attack_success_rate', 0) * 100:.0f}%"],
+        ["Blast radius", f"{rep.get('blast_radius', 1)}/5"],
+    ]
+    st = Table(summary, colWidths=[70 * mm, 100 * mm])
+    st.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 0), (0, -1), MUTED),
+        ("TEXTCOLOR", (1, 0), (1, -1), INK),
+        ("FONTNAME", (1, 0), (1, -1), "Helvetica-Bold"),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.5, LINE),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(st)
+
+    # Findings table.
+    story.append(Paragraph("Findings", h2))
+    rows = [["Sev", "OWASP", "Category", "Verdict", "Vector"]]
+    style_cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), INK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.4, LINE),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]
+    for i, a in enumerate(data["attacks"], start=1):
+        rows.append([
+            a["severity"], a["owasp_ref"], _esc(a["category"]), a["verdict"],
+            "document" if a.get("injection_vector") == "document" else "direct",
+        ])
+        style_cmds.append(("TEXTCOLOR", (0, i), (0, i), SEV_COLOR.get(a["severity"], MUTED)))
+        style_cmds.append(("TEXTCOLOR", (3, i), (3, i), VERDICT_COLOR.get(a["verdict"], MUTED)))
+        style_cmds.append(("FONTNAME", (0, i), (0, i), "Helvetica-Bold"))
+    ft = Table(rows, colWidths=[20 * mm, 20 * mm, 62 * mm, 26 * mm, 24 * mm], repeatRows=1)
+    ft.setStyle(TableStyle(style_cmds))
+    story.append(ft)
+
+    # Per-finding mitigations.
+    story.append(Paragraph("Recommended mitigations", h2))
     for a in data["attacks"]:
-        if y < 30 * mm:
-            c.showPage()
-            y = height - 25 * mm
-            c.setFont("Helvetica", 9)
-        line = f"[{a['severity']}] {a['owasp_ref']} {a['category']} -> {a['verdict']}"
-        c.drawString(20 * mm, y, line[:110])
-        y -= 5 * mm
-        c.setFont("Helvetica-Oblique", 8)
-        c.drawString(24 * mm, y, ("Mitigation: " + a["mitigation"])[:120])
-        c.setFont("Helvetica", 9)
-        y -= 7 * mm
-    c.showPage()
-    c.save()
+        story.append(Paragraph(
+            f"<b>[{a['severity']}] {_esc(a['category'])}</b> ({a['owasp_ref']})", body))
+        story.append(Paragraph(_esc(a.get("mitigation", "")), small))
+        story.append(Spacer(1, 4))
+
+    story.append(HRFlowable(width="100%", thickness=0.5, color=LINE, spaceBefore=8, spaceAfter=4))
+    story.append(Paragraph(
+        "Generated by Sentinel AI · defensive LLM red-team + runtime guardrail platform.", small))
+
+    doc.build(story)
     return buf.getvalue()
+
+
+def _esc(text: str) -> str:
+    """Escape text for reportlab Paragraph mini-markup."""
+    return (
+        str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
 
 
 def _render_html(data: dict) -> str:

@@ -169,6 +169,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
                 mitigation=attack.get("mitigation", ""),
                 blast_radius=attack.get("blast_radius", 1),
                 injection_vector=attack.get("injection_vector", "direct"),
+                turns=attack.get("turns", 1),
             )
             db.add(model)
             await db.commit()
@@ -180,6 +181,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
             "category": attack["category"],
             "owasp_ref": attack["owasp_ref"],
             "injection_vector": attack.get("injection_vector", "direct"),
+            "turns": attack.get("turns", 1),
             "verdict": attack["verdict"],
             "severity": attack["severity"],
             "classifier_score": attack.get("classifier_score", 0.0),

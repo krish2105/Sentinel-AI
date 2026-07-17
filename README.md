@@ -81,8 +81,8 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
 - **Target Registry** — register a system prompt + optional live endpoint + declared tools (each tagged `read`/`write`/`external`). No endpoint? Sentinel simulates one so you always have something to attack.
 - **Live Red-Team Console** — attacks stream in over Server-Sent Events with animated verdict chips, a typing terminal log, a filling OWASP coverage grid, and a posture gauge that counts up on completion.
 - **Human-in-the-loop gate** — live-endpoint attacks pause on a LangGraph interrupt until you click **Arm live attacks**.
-- **8 attack categories** — direct & indirect injection, system-prompt leak, jailbreak, sensitive-info disclosure, excessive agency, goal hijacking, and data/memory poisoning.
-- **Scored Report** — per-attack verdict / severity / OWASP citation / payload / target response / mitigation, an aggregate posture score, verdict & severity charts, a **blast-radius diagram**, and **JSON / PDF export**.
+- **8 attack categories** — direct & indirect injection, system-prompt leak, jailbreak, sensitive-info disclosure, excessive agency, goal hijacking, and data/memory poisoning; jailbreak & goal-hijacking run as **multi-turn "crescendo"** attacks (benign build-up → exploit turn).
+- **Scored Report** — per-attack verdict / severity / OWASP citation / payload / target response / mitigation, an aggregate posture score, verdict & severity charts, a **blast-radius diagram**, a **run-to-run comparison** with regression alerts, and **JSON / styled-PDF export**.
 - **Firewall Playground** — send a malicious prompt with guardrails **ON** (watch the `BLOCKED` stamp slam in with the OWASP ref) vs **OFF** (watch it leak). The contrast *is* the demo.
 - **In-app A/B before/after** — one click runs the *same* attack with guardrails off then on and renders the leaked-vs-blocked contrast side by side (`POST /proxy/ab`). The headline "83% ASR reduction" is now a live product surface, not just an offline eval script.
 - **Unified playground** — put the firewall in front of a *registered target* (its system prompt + declared tools) or a free-form prompt, and scan an untrusted *retrieved document* alongside the message (indirect-injection defense).
@@ -204,12 +204,16 @@ ENABLE_HEAVY_ML=true                # then: pip install -r requirements-ml.txt
 ## Testing & evaluation
 
 ```bash
-make test    # pytest — graph transitions, scanners, tool allow-list, proxy A/B, API
-make eval    # classifier + guardrail A/B + judge + RAG eval reports
+make test              # backend pytest — graph, scanners, tool allow-list, proxy A/B, approvals…
+make eval              # classifier + guardrail A/B + judge + RAG eval reports
+cd frontend && npm test        # Vitest unit tests (utils, api client, primitives)
+cd frontend && npm run e2e     # Playwright happy-path (needs the backend running)
 ```
 
-CI runs both on every push and PR ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
-backend tests + all four eval harnesses, and a full frontend production build.
+CI runs three jobs on every push and PR ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+**backend** (pytest + all four eval harnesses), **frontend** (typecheck + Vitest unit
+tests + production build), and **e2e** (Playwright happy-path against a live backend +
+frontend, in headless Chromium).
 
 ---
 
@@ -233,8 +237,9 @@ An honest self-assessment for a portfolio / applied-AI-security context.
 
 ## Tech stack
 
-**Backend** — Python 3.11 · FastAPI · SQLAlchemy 2.0 (async) · LangGraph · sentence-transformers · transformers · sse-starlette · Alembic
+**Backend** — Python 3.11 · FastAPI · SQLAlchemy 2.0 (async) · LangGraph · sentence-transformers · transformers · sse-starlette · Alembic · Redis (optional, for distributed rate limiting)
 **Frontend** — Next.js 14 (App Router) · TypeScript · Tailwind · Motion · React Three Fiber · Recharts · Lenis
+**Testing** — pytest · Vitest + Testing Library · Playwright (E2E)
 **Infra** — Docker · Postgres + pgvector · Render · Vercel — all free tier
 
 ---

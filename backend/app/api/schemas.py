@@ -90,6 +90,7 @@ class AttackOut(BaseModel):
     mitigation: str
     blast_radius: int
     injection_vector: str = "direct"
+    turns: int = 1
 
     class Config:
         from_attributes = True
@@ -172,3 +173,20 @@ class ApprovalOut(BaseModel):
 
 class ApprovalDecision(BaseModel):
     decision: str = Field(pattern="^(approve|deny)$")
+
+
+# --- Run-to-run comparison ---
+class RunComparison(BaseModel):
+    run_id: str
+    previous_run_id: Optional[str]
+    has_previous: bool
+    posture: int
+    previous_posture: Optional[int]
+    posture_delta: Optional[int]  # positive = improved
+    asr: float
+    previous_asr: Optional[float]
+    asr_delta: Optional[float]  # positive = worse
+    regressed_categories: List[str]  # passed before, failing now
+    fixed_categories: List[str]  # failed before, passing now
+    regression: bool  # posture dropped or a new category started failing
+    summary: str

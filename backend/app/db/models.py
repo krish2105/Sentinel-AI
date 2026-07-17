@@ -113,6 +113,8 @@ class Attack(Base):
     # How the payload reached the target: "direct" (user turn) or "document"
     # (hidden inside retrieved/tool content — a truly-indirect injection).
     injection_vector: Mapped[str] = mapped_column(String, default="direct")
+    # Number of conversation turns (>1 for multi-turn "crescendo" attacks).
+    turns: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     run: Mapped["Run"] = relationship(back_populates="attacks")

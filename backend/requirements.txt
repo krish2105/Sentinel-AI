@@ -19,6 +19,10 @@ alembic==1.14.0
 # --- Optional export ---
 reportlab==4.2.5
 
+# --- Optional distributed rate limiting (enable by setting REDIS_URL) ---
+# Lazy-imported; the app runs on the in-memory limiter when REDIS_URL is unset.
+redis==5.2.1
+
 # --- Optional observability (enable by setting LANGFUSE_PUBLIC_KEY/SECRET_KEY) ---
 # Lightweight HTTP-based client; a no-op everywhere in the app when keys are blank.
 langfuse==2.53.9

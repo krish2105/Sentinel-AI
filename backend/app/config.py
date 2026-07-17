@@ -86,6 +86,9 @@ class Settings(BaseSettings):
 
     # --- Rate limiting ---
     rate_limit_per_minute: int = Field(default=120)
+    # When set (e.g. redis://host:6379/0), rate limiting is distributed across
+    # instances via Redis; otherwise a per-process in-memory window is used.
+    redis_url: str = Field(default="")
 
     # --- Observability ---
     langfuse_public_key: str = Field(default="")

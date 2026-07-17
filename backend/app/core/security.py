@@ -121,14 +121,40 @@ def decode_token(token: str) -> str | None:
         return None
 
 
-# --- Rate limiting (in-memory sliding window) -------------------------------
+# --- Rate limiting (sliding window; Redis-backed when configured) -----------
 class RateLimiter:
-    def __init__(self, per_minute: int) -> None:
-        self.per_minute = per_minute
-        self._hits: Dict[str, Deque[float]] = defaultdict(deque)
+    """Sliding-window limiter.
 
-    def allow(self, key: str) -> bool:
-        now = time.time()
+    Uses Redis (a per-key sorted set of request timestamps) when ``REDIS_URL`` is
+    configured, so limits hold across horizontally-scaled instances. Falls back
+    to a per-process in-memory window otherwise — the zero-setup default. The
+    interface is async so the Redis path never blocks the event loop.
+    """
+
+    def __init__(self, per_minute: int, redis_url: str = "") -> None:
+        self.per_minute = per_minute
+        self.redis_url = redis_url
+        self._hits: Dict[str, Deque[float]] = defaultdict(deque)
+        self._redis = None
+        self._redis_failed = False
+
+    async def _client(self):
+        if not self.redis_url or self._redis_failed:
+            return None
+        if self._redis is None:
+            try:
+                import redis.asyncio as aioredis
+
+                self._redis = aioredis.from_url(
+                    self.redis_url, encoding="utf-8", decode_responses=True
+                )
+            except Exception:
+                # Redis unavailable/misconfigured — degrade to in-memory.
+                self._redis_failed = True
+                return None
+        return self._redis
+
+    def _allow_memory(self, key: str, now: float) -> bool:
         window = self._hits[key]
         while window and now - window[0] > 60:
             window.popleft()
@@ -137,8 +163,28 @@ class RateLimiter:
         window.append(now)
         return True
 
+    async def allow(self, key: str) -> bool:
+        now = time.time()
+        client = await self._client()
+        if client is None:
+            return self._allow_memory(key, now)
+        try:
+            redis_key = f"ratelimit:{key}"
+            cutoff = now - 60
+            async with client.pipeline(transaction=True) as pipe:
+                pipe.zremrangebyscore(redis_key, 0, cutoff)
+                pipe.zadd(redis_key, {f"{now}:{secrets.token_hex(4)}": now})
+                pipe.zcard(redis_key)
+                pipe.expire(redis_key, 60)
+                _, _, count, _ = await pipe.execute()
+            return count <= self.per_minute
+        except Exception:
+            # Any Redis error at request time: fail open to in-memory, don't 500.
+            self._redis_failed = True
+            return self._allow_memory(key, now)
 
-rate_limiter = RateLimiter(settings.rate_limit_per_minute)
+
+rate_limiter = RateLimiter(settings.rate_limit_per_minute, settings.redis_url)
 
 
 # --- Input hardening --------------------------------------------------------

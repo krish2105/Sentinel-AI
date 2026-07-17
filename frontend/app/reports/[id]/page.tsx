@@ -19,6 +19,7 @@ import { PostureGauge } from "@/components/PostureGauge";
 import { OwaspCoverageGrid } from "@/components/OwaspCoverageGrid";
 import { BlastRadiusDiagram } from "@/components/BlastRadiusDiagram";
 import { FindingCard } from "@/components/FindingCard";
+import { RunComparisonCard } from "@/components/RunComparisonCard";
 import { Stat } from "@/components/primitives";
 
 const VERDICT_COLORS: Record<string, string> = {
@@ -103,6 +104,9 @@ export default function ReportPage({ params }: { params: { id: string } }) {
           </a>
         </div>
       </div>
+
+      {/* Run-to-run comparison + regression alert (hidden on baseline run) */}
+      <RunComparisonCard runId={params.id} />
 
       {/* Top summary grid */}
       <div className="grid lg:grid-cols-3 gap-6 mb-6">

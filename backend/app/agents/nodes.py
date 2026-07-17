@@ -13,7 +13,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.state import AgentState
-from app.core.attack_library import CATEGORIES
+from app.core.attack_library import CATEGORIES, multi_turn_script
 from app.guardrails.policy import blast_radius
 from app.llm.client import get_llm
 from app.ml.injection_model import classify
@@ -62,6 +62,7 @@ async def attacker_node(state: AgentState, db: AsyncSession) -> dict:
         "id": str(uuid.uuid4()),
         "payload": payload.strip(),
         "injection_vector": "direct",
+        "turns": 1,
     }
 
     # Truly-indirect injection: the payload is not sent as the user turn — it is
@@ -71,6 +72,18 @@ async def attacker_node(state: AgentState, db: AsyncSession) -> dict:
         result["injection_vector"] = "document"
         result["document"] = result["payload"]
         result["user_message"] = "Please read and summarize the retrieved document below."
+
+    # Multi-turn "crescendo": benign rapport-building turns escalate to the ask.
+    if cat.multi_turn:
+        script = multi_turn_script(category)
+        if script:
+            # Keep the LLM/mock-generated exploit as the final turn.
+            turns = script[:-1] + [result["payload"]]
+            result["turns_script"] = turns
+            result["turns"] = len(turns)
+            result["payload"] = "\n\n".join(
+                f"[turn {i + 1}] {t}" for i, t in enumerate(turns)
+            )
 
     return {"current": result}
 
@@ -104,6 +117,25 @@ async def target_harness_node(state: AgentState, db: AsyncSession) -> dict:
     item = state["current"]
     target = state["target"]
     system_prompt = target.get("system_prompt", "You are a helpful assistant.")
+    llm = get_llm()
+    endpoint = target.get("endpoint_url")
+    live = bool(endpoint) and state.get("live_armed") and target.get("consent")
+
+    # Multi-turn crescendo: replay the turns in order, carrying the conversation,
+    # and judge on the final response — single-turn filters often miss these.
+    if item.get("turns_script"):
+        messages = [{"role": "system", "content": system_prompt}]
+        response = ""
+        for turn in item["turns_script"]:
+            messages.append({"role": "user", "content": turn})
+            if live:
+                response = await _call_live(endpoint, target, turn)
+            else:
+                response = await llm.complete(
+                    messages, temperature=0.7, purpose="target", trace=state.get("_trace")
+                )
+            messages.append({"role": "assistant", "content": response})
+        return {"current": {**item, "target_response": response.strip()}}
 
     if item.get("injection_vector") == "document":
         user_content = (
@@ -113,11 +145,9 @@ async def target_harness_node(state: AgentState, db: AsyncSession) -> dict:
     else:
         user_content = item["payload"]
 
-    endpoint = target.get("endpoint_url")
-    if endpoint and state.get("live_armed") and target.get("consent"):
+    if live:
         response = await _call_live(endpoint, target, user_content)
     else:
-        llm = get_llm()
         response = await llm.complete(
             [
                 {"role": "system", "content": system_prompt},

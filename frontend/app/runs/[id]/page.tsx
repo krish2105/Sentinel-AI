@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { Terminal, ShieldAlert, ArrowRight, Zap, Loader2, Activity, FileText } from "lucide-react";
+import {
+  Terminal,
+  ShieldAlert,
+  ArrowRight,
+  Zap,
+  Loader2,
+  Activity,
+  FileText,
+  MessagesSquare,
+} from "lucide-react";
 import { api, ATTACK_CATEGORIES, type Attack } from "@/lib/api";
 import { useRunStream } from "@/hooks/useRunStream";
 import { OwaspCoverageGrid } from "@/components/OwaspCoverageGrid";
@@ -38,6 +47,7 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
         mitigation: e.data.mitigation ?? "",
         blast_radius: e.data.blast_radius ?? 1,
         injection_vector: e.data.injection_vector ?? "direct",
+        turns: e.data.turns ?? 1,
       }));
   }, [events]);
 
@@ -202,6 +212,12 @@ function AttackFeed({
                   <FileText
                     className="h-3 w-3 text-warning shrink-0"
                     aria-label="Indirect — via retrieved document"
+                  />
+                )}
+                {(a.turns ?? 1) > 1 && (
+                  <MessagesSquare
+                    className="h-3 w-3 text-cyan shrink-0"
+                    aria-label={`Multi-turn — ${a.turns} turns`}
                   />
                 )}
                 <span className="flex-1 text-sm truncate">{catLabel(a.category)}</span>

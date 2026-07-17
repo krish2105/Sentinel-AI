@@ -19,7 +19,7 @@ DEMO_USER_ID = "demo-user"
 
 async def rate_limit(request: Request) -> None:
     key = request.client.host if request.client else "anon"
-    if not rate_limiter.allow(key):
+    if not await rate_limiter.allow(key):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Rate limit exceeded. Try again shortly.",

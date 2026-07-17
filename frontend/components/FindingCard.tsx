@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, ShieldAlert, ShieldCheck, BookMarked, FileText } from "lucide-react";
+import {
+  ChevronDown,
+  ShieldAlert,
+  ShieldCheck,
+  BookMarked,
+  FileText,
+  MessagesSquare,
+} from "lucide-react";
 import type { Attack } from "@/lib/api";
 import { ATTACK_CATEGORIES } from "@/lib/api";
 import { SeverityBadge, VerdictChip, PayloadViewer } from "./primitives";
@@ -44,6 +51,14 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
                 title="Delivered indirectly — hidden inside a retrieved document the target ingested"
               >
                 <FileText className="h-3 w-3" /> via document
+              </span>
+            )}
+            {(attack.turns ?? 1) > 1 && (
+              <span
+                className="mono text-[10px] text-cyan px-1.5 py-0.5 rounded bg-cyan/10 inline-flex items-center gap-1"
+                title="Multi-turn crescendo — benign build-up before the exploit turn"
+              >
+                <MessagesSquare className="h-3 w-3" /> {attack.turns} turns
               </span>
             )}
           </div>

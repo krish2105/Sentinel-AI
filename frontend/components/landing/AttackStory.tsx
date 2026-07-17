@@ -18,12 +18,21 @@ function StageCard({
   const total = 4;
   const start = index / total;
   const end = (index + 1) / total;
+  // Scroll-linked transforms are accelerated via the WAAPI ScrollTimeline, whose
+  // keyframe offsets MUST stay within [0,1]. Values outside that range (e.g. a
+  // negative lead-in on the first card, or >1 tail on the last) throw
+  // "Offsets must be monotonically non-decreasing" and crash the page — so clamp.
+  const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
   const opacity = useTransform(
     progress,
-    [start - 0.12, start, end - 0.05, end + 0.05],
+    [clamp01(start - 0.12), start, clamp01(end - 0.05), clamp01(end + 0.05)],
     [0.25, 1, 1, 0.25]
   );
-  const scale = useTransform(progress, [start - 0.1, start, end], [0.95, 1, 0.98]);
+  const scale = useTransform(
+    progress,
+    [clamp01(start - 0.1), start, end],
+    [0.95, 1, 0.98]
+  );
   const Icon = stage.icon;
   return (
     <motion.div

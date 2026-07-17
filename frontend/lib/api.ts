@@ -46,6 +46,23 @@ export type Attack = {
   mitigation: string;
   blast_radius: number;
   injection_vector?: "direct" | "document";
+  turns?: number;
+};
+
+export type RunComparison = {
+  run_id: string;
+  previous_run_id: string | null;
+  has_previous: boolean;
+  posture: number;
+  previous_posture: number | null;
+  posture_delta: number | null;
+  asr: number;
+  previous_asr: number | null;
+  asr_delta: number | null;
+  regressed_categories: string[];
+  fixed_categories: string[];
+  regression: boolean;
+  summary: string;
 };
 
 export type Approval = {
@@ -152,6 +169,7 @@ export const api = {
     req<Run>("/runs", { method: "POST", body: JSON.stringify(body) }),
   armRun: (id: string) => req<Run>(`/runs/${id}/arm`, { method: "POST" }),
   getRunAttacks: (id: string) => req<Attack[]>(`/runs/${id}/attacks`),
+  compareRun: (id: string) => req<RunComparison>(`/runs/${id}/compare`),
 
   getReport: (id: string) =>
     req<{
