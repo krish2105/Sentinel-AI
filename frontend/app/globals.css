@@ -21,6 +21,8 @@
   --c-cyan: 34 233 211;      /* #22E9D3 brand accent */
   --c-danger: 255 77 94;     /* #FF4D5E */
   --c-warning: 255 176 32;   /* #FFB020 */
+  /* Text ON accent buttons (cyan/warning) — dark ink, AA in both themes. */
+  --c-accent-fg: 10 12 18;   /* #0A0C12 */
 
   --grid-line: 35 40 56;
   --grid-alpha: 0.35;
@@ -43,6 +45,7 @@
   --c-cyan: 13 148 136;      /* #0D9488 teal-600 — AA contrast on white */
   --c-danger: 220 38 55;     /* #DC2637 */
   --c-warning: 180 120 6;    /* #B47806 */
+  --c-accent-fg: 10 12 18;   /* dark ink — AA on teal/amber buttons in light too */
 
   --grid-line: 148 163 184;
   --grid-alpha: 0.18;

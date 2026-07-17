@@ -128,7 +128,7 @@ export default function AuthPage() {
               <button
                 onClick={issuedKey ? doSignin : doRegister}
                 disabled={busy}
-                className="w-full rounded-xl bg-cyan text-base font-medium py-2.5 hover:shadow-glow transition-shadow disabled:opacity-50"
+                className="w-full rounded-xl bg-cyan text-accent-fg font-medium py-2.5 hover:shadow-glow transition-shadow disabled:opacity-50"
               >
                 {busy ? "Working…" : issuedKey ? "Continue → sign in" : "Create API key"}
               </button>
@@ -150,7 +150,7 @@ export default function AuthPage() {
               <button
                 onClick={doSignin}
                 disabled={busy}
-                className="w-full rounded-xl bg-cyan text-base font-medium py-2.5 hover:shadow-glow transition-shadow disabled:opacity-50"
+                className="w-full rounded-xl bg-cyan text-accent-fg font-medium py-2.5 hover:shadow-glow transition-shadow disabled:opacity-50"
               >
                 {busy ? "Signing in…" : "Sign in"}
               </button>

@@ -30,5 +30,8 @@ test("theme toggle switches the document theme", async ({ page }) => {
 
 test("targets page loads", async ({ page }) => {
   await page.goto("/targets");
-  await expect(page.getByRole("heading", { name: "Targets" })).toBeVisible();
+  // Exact — otherwise the empty-state "No targets yet" heading also matches.
+  await expect(
+    page.getByRole("heading", { name: "Targets", exact: true })
+  ).toBeVisible();
 });

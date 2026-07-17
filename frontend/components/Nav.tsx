@@ -20,7 +20,11 @@ export function Nav() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-4">
       <nav className="glass rounded-full px-3 py-2 flex items-center gap-1 w-full max-w-3xl">
-        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 group">
+        <Link
+          href="/"
+          aria-label="Sentinel AI home"
+          className="flex items-center gap-2 px-3 py-1.5 group"
+        >
           <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-cyan/10">
             <Shield className="h-4 w-4 text-cyan" />
             <span className="absolute inset-0 rounded-lg bg-cyan/20 animate-pulse-ring" />
@@ -68,7 +72,7 @@ export function Nav() {
         )}
         <Link
           href="/targets"
-          className="ml-1 px-4 py-1.5 rounded-full text-sm font-medium bg-cyan text-base hover:shadow-glow transition-shadow"
+          className="ml-1 px-4 py-1.5 rounded-full text-sm font-medium bg-cyan text-accent-fg hover:shadow-glow transition-shadow"
         >
           Launch
         </Link>

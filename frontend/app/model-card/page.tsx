@@ -66,9 +66,9 @@ export default function ModelCardPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Classifier card */}
         <div className="glass rounded-2xl p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
             <ScanLine className="h-4 w-4 text-cyan" /> Prompt-Injection Classifier
-          </h3>
+          </h2>
           <p className="text-xs text-muted mb-4">
             engine: <span className="mono text-fg/70">{c?.engine ?? "—"}</span> · n=
             {c?.n ?? "—"}
@@ -81,7 +81,7 @@ export default function ModelCardPage() {
           </div>
           {cm && (
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted mb-2">
+              <div className="text-xs uppercase tracking-widest text-muted mb-2">
                 Confusion matrix
               </div>
               <div className="grid grid-cols-2 gap-1.5 max-w-[220px]">
@@ -96,9 +96,9 @@ export default function ModelCardPage() {
 
         {/* Guardrail A/B */}
         <div className="glass rounded-2xl p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
             <Gauge className="h-4 w-4 text-cyan" /> Guardrail A/B Effectiveness
-          </h3>
+          </h2>
           <p className="text-xs text-muted mb-4">
             Attack-success-rate with the proxy off vs on.
           </p>
@@ -138,13 +138,18 @@ export default function ModelCardPage() {
 
         {/* Judge */}
         <div className="glass rounded-2xl p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
             <Scale className="h-4 w-4 text-cyan" /> LLM-as-Judge Agreement
-          </h3>
+          </h2>
           <p className="text-xs text-muted mb-4">
             Golden set of {judge?.n ?? "—"} (payload, response, expected verdict) cases.
           </p>
-          <div className="space-y-1.5 max-h-56 overflow-auto">
+          <div
+            className="space-y-1.5 max-h-56 overflow-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="Judge golden-set results"
+          >
             {judge?.cases?.map((cse: any, i: number) => (
               <div
                 key={i}
@@ -153,10 +158,10 @@ export default function ModelCardPage() {
                 <span className={cse.pass ? "text-cyan" : "text-danger"}>
                   {cse.pass ? "✓" : "✗"}
                 </span>
-                <span className="mono text-[10px] text-muted flex-1 truncate">
+                <span className="mono text-xs text-muted flex-1 truncate">
                   {cse.category}
                 </span>
-                <span className="mono text-[10px] text-muted">
+                <span className="mono text-xs text-muted">
                   {cse.expected} → {cse.got}
                 </span>
               </div>
@@ -166,13 +171,18 @@ export default function ModelCardPage() {
 
         {/* RAG */}
         <div className="glass rounded-2xl p-6">
-          <h3 className="font-semibold mb-1 flex items-center gap-2">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
             <BookMarked className="h-4 w-4 text-cyan" /> RAG Grounding
-          </h3>
+          </h2>
           <p className="text-xs text-muted mb-4">
             Does the retriever surface the correct OWASP entry for each category?
           </p>
-          <div className="space-y-1.5 max-h-56 overflow-auto">
+          <div
+            className="space-y-1.5 max-h-56 overflow-auto"
+            tabIndex={0}
+            role="region"
+            aria-label="RAG grounding results"
+          >
             {rag?.per_category?.map((r: any, i: number) => (
               <div
                 key={i}
@@ -181,11 +191,11 @@ export default function ModelCardPage() {
                 <span className={r.hit ? "text-cyan" : "text-danger"}>
                   {r.hit ? "✓" : "✗"}
                 </span>
-                <span className="mono text-[10px] text-muted flex-1 truncate">
+                <span className="mono text-xs text-muted flex-1 truncate">
                   {r.category}
                 </span>
-                <span className="mono text-[10px] text-cyan">{r.expected_ref}</span>
-                <span className="mono text-[10px] text-muted">
+                <span className="mono text-xs text-cyan">{r.expected_ref}</span>
+                <span className="mono text-xs text-muted">
                   [{r.retrieved.join(", ")}]
                 </span>
               </div>
@@ -205,7 +215,7 @@ function Metric({ icon: Icon, label, value, accent }: any) {
       className="gradient-border rounded-xl p-4"
     >
       <Icon className="h-4 w-4 text-cyan mb-2" />
-      <div className="text-2xl font-bold" style={{ color: accent }}>
+      <div className={"text-2xl font-bold" + (accent ? " text-cyan" : "")}>
         {value}
       </div>
       <div className="text-[11px] text-muted mt-0.5">{label}</div>
@@ -216,11 +226,8 @@ function Metric({ icon: Icon, label, value, accent }: any) {
 function Cell2({ label, value, danger }: { label: string; value?: number; danger?: boolean }) {
   return (
     <div className="rounded-lg bg-base/40 border border-line/50 p-3">
-      <div className="text-[10px] uppercase tracking-widest text-muted">{label}</div>
-      <div
-        className="text-lg font-bold mono"
-        style={{ color: danger ? "#FF4D5E" : "#22E9D3" }}
-      >
+      <div className="text-xs uppercase tracking-widest text-muted">{label}</div>
+      <div className={"text-lg font-bold mono " + (danger ? "text-danger" : "text-cyan")}>
         {value !== undefined ? value.toFixed(2) : "—"}
       </div>
     </div>
@@ -236,11 +243,8 @@ function ConfCell({ label, value, tone }: { label: string; value: number; tone: 
         border: `1px solid ${tone === "good" ? "#22E9D344" : "#FF4D5E44"}`,
       }}
     >
-      <div className="mono text-[10px] text-muted">{label}</div>
-      <div
-        className="text-xl font-bold mono"
-        style={{ color: tone === "good" ? "#22E9D3" : "#FF4D5E" }}
-      >
+      <div className="mono text-xs text-muted">{label}</div>
+      <div className={"text-xl font-bold mono " + (tone === "good" ? "text-cyan" : "text-danger")}>
         {value}
       </div>
     </div>

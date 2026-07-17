@@ -106,7 +106,7 @@ export function ApprovalQueue({ signal = 0 }: { signal?: number }) {
                   <button
                     onClick={() => decide(a.id, "approve")}
                     disabled={busy === a.id}
-                    className="flex items-center gap-1 rounded-full bg-cyan text-base px-3 py-1 text-xs font-medium hover:shadow-glow transition-shadow disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-full bg-cyan text-accent-fg px-3 py-1 text-xs font-medium hover:shadow-glow transition-shadow disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" /> Approve
                   </button>

@@ -98,7 +98,7 @@ export default function ReportPage({ params }: { params: { id: string } }) {
           </a>
           <a
             href={`${API_BASE}/reports/${params.id}/pdf`}
-            className="inline-flex items-center gap-2 rounded-full bg-cyan px-4 py-2.5 text-sm font-medium text-base hover:shadow-glow transition-shadow"
+            className="inline-flex items-center gap-2 rounded-full bg-cyan px-4 py-2.5 text-sm font-medium text-accent-fg hover:shadow-glow transition-shadow"
           >
             <Download className="h-4 w-4" /> Export PDF
           </a>

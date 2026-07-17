@@ -25,6 +25,7 @@ const config: Config = {
         danger: "rgb(var(--c-danger) / <alpha-value>)",
         warning: "rgb(var(--c-warning) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
+        "accent-fg": "rgb(var(--c-accent-fg) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],

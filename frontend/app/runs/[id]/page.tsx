@@ -92,7 +92,7 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
             )}
             <Link
               href={`/reports/${runId}`}
-              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base hover:shadow-glow transition-shadow"
+              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-accent-fg hover:shadow-glow transition-shadow"
             >
               View full report
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -287,7 +287,13 @@ function TerminalLog({ events }: { events: { type: string; data: any }[] }) {
           <span className="h-2.5 w-2.5 rounded-full bg-cyan/50" />
         </div>
       </div>
-      <div ref={ref} className="mono text-[11px] p-4 h-56 overflow-auto leading-relaxed">
+      <div
+        ref={ref}
+        tabIndex={0}
+        role="log"
+        aria-label="Red-team live log"
+        className="mono text-[11px] p-4 h-56 overflow-auto leading-relaxed"
+      >
         {lines.map((l, i) => (
           <div
             key={i}
@@ -334,7 +340,7 @@ function HumanGate({ runId, onArmed }: { runId: string; onArmed: () => void }) {
           onArmed();
         }}
         disabled={arming}
-        className="rounded-full bg-warning text-base px-5 py-2.5 font-medium disabled:opacity-50"
+        className="rounded-full bg-warning text-accent-fg px-5 py-2.5 font-medium disabled:opacity-50"
       >
         {arming ? "Arming…" : "⚡ Arm live attacks"}
       </button>

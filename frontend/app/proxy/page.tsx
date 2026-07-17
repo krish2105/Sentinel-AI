@@ -268,7 +268,7 @@ export default function ProxyPage() {
           <button
             onClick={send}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base hover:shadow-glow transition-shadow disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-accent-fg hover:shadow-glow transition-shadow disabled:opacity-50"
           >
             {mode === "ab" ? <GitCompareArrows className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             {loading ? "Running…" : mode === "ab" ? "Run A/B comparison" : "Send through proxy"}
@@ -385,7 +385,11 @@ function ABColumn({
             : "Response returned"}
         </span>
       </div>
-      <div className="rounded-lg bg-base/60 border border-line p-3 mono text-xs whitespace-pre-wrap max-h-48 overflow-auto">
+      <div
+        tabIndex={0}
+        aria-label="Target response"
+        className="rounded-lg bg-base/60 border border-line p-3 mono text-xs whitespace-pre-wrap max-h-48 overflow-auto"
+      >
         {result.response}
       </div>
     </div>

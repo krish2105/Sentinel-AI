@@ -207,13 +207,22 @@ ENABLE_HEAVY_ML=true                # then: pip install -r requirements-ml.txt
 make test              # backend pytest — graph, scanners, tool allow-list, proxy A/B, approvals…
 make eval              # classifier + guardrail A/B + judge + RAG eval reports
 cd frontend && npm test        # Vitest unit tests (utils, api client, primitives)
-cd frontend && npm run e2e     # Playwright happy-path (needs the backend running)
+cd frontend && npm run e2e     # Playwright happy-path + axe-core a11y gate (needs backend)
 ```
 
 CI runs three jobs on every push and PR ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 **backend** (pytest + all four eval harnesses), **frontend** (typecheck + Vitest unit
-tests + production build), and **e2e** (Playwright happy-path against a live backend +
-frontend, in headless Chromium).
+tests + production build), and **e2e** (Playwright happy-path **plus an axe-core
+accessibility gate** — no critical/serious WCAG 2 A/AA violations on the key pages —
+against a live backend + frontend, in headless Chromium).
+
+> **Accessibility & performance.** Pages are keyboard-navigable with visible focus
+> rings, theme-aware AA contrast (light & dark), semantic landmarks and heading
+> order, labelled controls, and focusable scroll regions. Audited scores:
+> **Lighthouse Accessibility 100, Best-Practices 100, SEO 100** on the key pages
+> (Performance 93–97; the 3D landing hero is lazy-loaded behind a static fallback),
+> and **zero axe critical/serious WCAG 2 A/AA violations** — the axe gate runs in CI
+> on every push.
 
 ---
 

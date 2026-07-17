@@ -52,7 +52,7 @@ export default function TargetsPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base hover:shadow-glow transition-shadow"
+          className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-accent-fg hover:shadow-glow transition-shadow"
         >
           <Plus className="h-4 w-4" /> New target
         </button>
@@ -97,7 +97,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <p className="text-muted mt-1 mb-5">Register your first target to launch a run.</p>
       <button
         onClick={onCreate}
-        className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base"
+        className="inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-accent-fg"
       >
         <Plus className="h-4 w-4" /> Create target
       </button>
@@ -357,7 +357,7 @@ function CreateModal({
           <button
             onClick={save}
             disabled={saving || !name || !systemPrompt}
-            className="flex-1 rounded-full bg-cyan py-2.5 font-medium text-base disabled:opacity-50"
+            className="flex-1 rounded-full bg-cyan py-2.5 font-medium text-accent-fg disabled:opacity-50"
           >
             {saving ? "Creating…" : "Create target"}
           </button>

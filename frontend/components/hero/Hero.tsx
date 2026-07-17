@@ -89,7 +89,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/targets"
-              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-6 py-3 font-medium text-base transition-shadow hover:shadow-glow"
+              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-6 py-3 font-medium text-accent-fg transition-shadow hover:shadow-glow"
             >
               Launch a red-team run
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

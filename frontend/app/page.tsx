@@ -25,7 +25,7 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-3 relative">
             <Link
               href="/targets"
-              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-6 py-3 font-medium text-base hover:shadow-glow transition-shadow"
+              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-6 py-3 font-medium text-accent-fg hover:shadow-glow transition-shadow"
             >
               Get started
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

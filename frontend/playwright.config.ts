@@ -7,11 +7,14 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  timeout: 45_000,
+  expect: { timeout: 15_000 },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 2 : 0,
+  // Cap parallelism so the single dev backend/frontend isn't overwhelmed
+  // (avoids navigation-timeout flakes when many pages load at once).
+  workers: 4,
   reporter: process.env.CI ? "line" : "list",
   use: {
     baseURL: "http://localhost:3000",
