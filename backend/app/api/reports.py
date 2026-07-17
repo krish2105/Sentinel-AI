@@ -136,9 +136,18 @@ def _render_pdf(data: dict) -> bytes:  # pragma: no cover - optional dep
     styles = getSampleStyleSheet()
     body = ParagraphStyle("body", parent=styles["Normal"], fontSize=9, textColor=INK, leading=12)
     small = ParagraphStyle("small", parent=body, fontSize=7.5, textColor=MUTED, leading=9)
-    h1 = ParagraphStyle("h1", parent=styles["Title"], fontSize=22, textColor=INK, spaceAfter=2)
+    # NOTE: reportlab Paragraph styles don't auto-scale `leading` (line height)
+    # when you bump `fontSize` above the parent style's — the parent Title
+    # style is sized for 18pt with leading=22, so a naive fontSize=48 override
+    # leaves a 22pt-tall line box for a 48pt glyph, and it overflows into
+    # whatever paragraph comes next. Always set leading explicitly (~1.15x
+    # fontSize) alongside any fontSize override on a heading-derived style.
+    h1 = ParagraphStyle("h1", parent=styles["Title"], fontSize=22, leading=26, textColor=INK, spaceAfter=2)
     h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, textColor=INK, spaceBefore=10, spaceAfter=4)
-    score_style = ParagraphStyle("score", parent=styles["Title"], fontSize=48, textColor=TEAL, alignment=TA_CENTER)
+    score_style = ParagraphStyle(
+        "score", parent=styles["Title"], fontSize=48, leading=56,
+        textColor=TEAL, alignment=TA_CENTER, spaceAfter=4,
+    )
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -147,7 +156,10 @@ def _render_pdf(data: dict) -> bytes:  # pragma: no cover - optional dep
     )
     story = []
 
-    story.append(Paragraph("🛡️ Sentinel AI — Security Report", h1))
+    # Helvetica has no emoji glyphs — a literal shield emoji renders as tofu
+    # boxes in the PDF, so the title is plain text here (fine elsewhere: HTML/UI
+    # render it via system emoji fonts, only this reportlab path can't).
+    story.append(Paragraph("Sentinel AI — Security Report", h1))
     story.append(Paragraph(
         f"Target: <b>{_esc(data['target']['name'])}</b> · Run {_esc(str(data['run_id'])[:8])}", body))
     story.append(HRFlowable(width="100%", thickness=1, color=LINE, spaceBefore=6, spaceAfter=10))
