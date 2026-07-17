@@ -11,7 +11,8 @@ from functools import lru_cache
 from typing import List
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from typing_extensions import Annotated
 
 
 class Settings(BaseSettings):
@@ -46,12 +47,17 @@ class Settings(BaseSettings):
     # --- Security middleware ---
     # Comma-separated allowed Host header values. "*" disables the check (default
     # for zero-config local dev). Set to your real hostnames in production.
-    trusted_hosts: List[str] = Field(default=["*"])
+    #
+    # NoDecode: pydantic-settings otherwise tries to JSON-decode env values for
+    # any List[str] field before our comma-split validator runs, and hard-crashes
+    # on a plain "host-a.com,host-b.com" string (invalid JSON). NoDecode skips
+    # that auto-decode so the raw string reaches _split_origins below.
+    trusted_hosts: Annotated[List[str], NoDecode] = Field(default=["*"])
     max_request_bytes: int = Field(default=1_000_000)  # 1 MB request body cap
     security_headers_enabled: bool = Field(default=True)
 
     # --- CORS ---
-    cors_origins: List[str] = Field(
+    cors_origins: Annotated[List[str], NoDecode] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"]
     )
 
