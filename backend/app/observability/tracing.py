@@ -9,10 +9,13 @@ and see exactly what the attacker/judge/target did on a given run.
 """
 from __future__ import annotations
 
+import logging
 from functools import lru_cache
 from typing import Any, Optional
 
 from app.config import settings
+
+logger = logging.getLogger("sentinel.tracing")
 
 _enabled = bool(settings.langfuse_public_key and settings.langfuse_secret_key)
 
@@ -24,12 +27,30 @@ def _client():
     try:
         from langfuse import Langfuse
 
-        return Langfuse(
+        client = Langfuse(
             public_key=settings.langfuse_public_key,
             secret_key=settings.langfuse_secret_key,
             host=settings.langfuse_host,
         )
+        # The SDK batches events to a background thread and doesn't validate
+        # credentials on construction, so a bad key or wrong-region host fails
+        # silently later — you'd only find out as a "trace not found" in the
+        # Langfuse UI days afterward. auth_check() makes one real (blocking,
+        # per the SDK's own docs) call here, but it's cached by @lru_cache so
+        # it only costs one request per process, and it turns a silent failure
+        # into a log line at the moment it actually happens. It raises (not
+        # returns False) on bad credentials, so the except below covers it.
+        client.auth_check()
+        return client
     except Exception:
+        logger.warning(
+            "Langfuse auth/init failed — check LANGFUSE_PUBLIC_KEY/SECRET_KEY "
+            "match a project in LANGFUSE_HOST=%s (EU host is "
+            "cloud.langfuse.com, US host is us.cloud.langfuse.com — keys from "
+            "one region don't work against the other's host).",
+            settings.langfuse_host,
+            exc_info=True,
+        )
         return None
 
 
@@ -57,6 +78,7 @@ def start_trace(trace_id: str, name: str, metadata: Optional[dict] = None):
     try:
         return client.trace(id=trace_id, name=name, metadata=metadata or {})
     except Exception:
+        logger.warning("Langfuse start_trace(%s) failed", trace_id, exc_info=True)
         return None
 
 
@@ -77,7 +99,7 @@ def log_generation(
             metadata=metadata or {},
         )
     except Exception:
-        pass
+        logger.warning("Langfuse log_generation(%s) failed", name, exc_info=True)
 
 
 def log_span(
@@ -95,7 +117,7 @@ def log_span(
             name=name, input=input_data, output=output_data, metadata=metadata or {}
         ).end()
     except Exception:
-        pass
+        logger.warning("Langfuse log_span(%s) failed", name, exc_info=True)
 
 
 def score(trace: Any, name: str, value: float, comment: Optional[str] = None) -> None:
@@ -105,7 +127,7 @@ def score(trace: Any, name: str, value: float, comment: Optional[str] = None) ->
     try:
         trace.score(name=name, value=value, comment=comment)
     except Exception:
-        pass
+        logger.warning("Langfuse score(%s) failed", name, exc_info=True)
 
 
 def flush() -> None:
@@ -114,4 +136,4 @@ def flush() -> None:
         try:
             client.flush()
         except Exception:
-            pass
+            logger.warning("Langfuse flush() failed", exc_info=True)
