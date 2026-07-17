@@ -37,6 +37,18 @@ def enabled() -> bool:
     return _client() is not None
 
 
+def trace_url(trace_id: str) -> Optional[str]:
+    """Build a deep-link to a run's trace in the Langfuse UI.
+
+    Returns None when tracing is disabled so callers can hide the link. The
+    ``/trace/{id}`` path resolves to the trace within the keys' project.
+    """
+    if not enabled() or not trace_id:
+        return None
+    host = settings.langfuse_host.rstrip("/")
+    return f"{host}/trace/{trace_id}"
+
+
 def start_trace(trace_id: str, name: str, metadata: Optional[dict] = None):
     """Start (or resume) a trace for a run. Returns None when tracing is off."""
     client = _client()

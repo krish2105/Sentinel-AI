@@ -27,6 +27,7 @@ export type Run = {
   selected_categories: string[];
   started_at: string;
   finished_at?: string | null;
+  trace_url?: string | null;
 };
 
 export type Verdict = "SAFE" | "BLOCKED" | "LEAKED" | "HIJACKED";
@@ -44,6 +45,21 @@ export type Attack = {
   citation: string;
   mitigation: string;
   blast_radius: number;
+  injection_vector?: "direct" | "document";
+};
+
+export type Approval = {
+  id: string;
+  target_id: string | null;
+  target_name: string;
+  tool_name: string;
+  risk: string;
+  arguments: string;
+  reason: string;
+  owasp_ref: string;
+  status: "pending" | "approved" | "denied";
+  created_at: string;
+  decided_at: string | null;
 };
 
 export const TOKEN_KEY = "sentinel-token";
@@ -141,10 +157,35 @@ export const api = {
     req<{
       run_id: string;
       posture_score: number;
+      trace_url?: string | null;
       report: any;
       attacks: Attack[];
       target: { name: string; tools: Tool[] };
     }>(`/reports/${id}`),
+
+  // --- Shadow-mode approvals ---
+  submitToolCall: (body: {
+    tool_name: string;
+    arguments?: string;
+    tools?: Tool[];
+    shadow_mode?: boolean;
+    target_id?: string;
+  }) =>
+    req<{
+      status: "executed" | "pending_approval" | "denied";
+      allowed: boolean;
+      requires_approval: boolean;
+      reason: string;
+      owasp_ref: string;
+      approval_id?: string | null;
+    }>("/approvals/tool-call", { method: "POST", body: JSON.stringify(body) }),
+  listApprovals: (status?: string) =>
+    req<Approval[]>(`/approvals${status ? `?status=${status}` : ""}`),
+  decideApproval: (id: string, decision: "approve" | "deny") =>
+    req<Approval>(`/approvals/${id}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision }),
+    }),
 
   dashboard: () =>
     req<{
@@ -178,15 +219,22 @@ export const api = {
 
   proxyChat: (body: {
     message: string;
-    system_prompt: string;
+    system_prompt?: string;
     guardrails: boolean;
+    target_id?: string;
+    document?: string;
   }) =>
     req<ProxyResult>("/proxy/chat", {
       method: "POST",
       body: JSON.stringify(body),
     }),
 
-  proxyAb: (body: { message: string; system_prompt: string }) =>
+  proxyAb: (body: {
+    message: string;
+    system_prompt?: string;
+    target_id?: string;
+    document?: string;
+  }) =>
     req<{
       message: string;
       without_guardrails: ProxyResult;

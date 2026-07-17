@@ -32,6 +32,7 @@ def _serialize(run, attacks, target) -> dict:
         "run_id": run.id,
         "status": run.status,
         "posture_score": run.posture_score,
+        "trace_url": run.trace_url,
         "target": {
             "name": target.name if target else "",
             "tools": target.tools if target else [],
@@ -44,6 +45,7 @@ def _serialize(run, attacks, target) -> dict:
                 "verdict": a.verdict, "severity": a.severity, "owasp_ref": a.owasp_ref,
                 "citation": a.citation, "mitigation": a.mitigation,
                 "blast_radius": a.blast_radius,
+                "injection_vector": getattr(a, "injection_vector", "direct"),
             }
             for a in attacks
         ],

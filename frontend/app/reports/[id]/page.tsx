@@ -13,7 +13,7 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { Download, FileJson, ShieldAlert, Radar } from "lucide-react";
+import { Download, FileJson, ShieldAlert, Radar, Activity } from "lucide-react";
 import { api, API_BASE, type Attack } from "@/lib/api";
 import { PostureGauge } from "@/components/PostureGauge";
 import { OwaspCoverageGrid } from "@/components/OwaspCoverageGrid";
@@ -78,6 +78,17 @@ export default function ReportPage({ params }: { params: { id: string } }) {
           </p>
         </div>
         <div className="flex gap-3">
+          {data.trace_url && (
+            <a
+              href={data.trace_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm hover:border-cyan/50 transition-colors"
+              title="Open this run's trace in Langfuse"
+            >
+              <Activity className="h-4 w-4" /> View trace
+            </a>
+          )}
           <a
             href={`${API_BASE}/reports/${params.id}/json`}
             className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm hover:border-cyan/50 transition-colors"

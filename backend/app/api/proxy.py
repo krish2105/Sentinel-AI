@@ -11,7 +11,7 @@ import json
 import time
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +22,7 @@ from app.api.schemas import (
     ProxyChatResponse,
 )
 from app.core.security import audit, payload_hash
-from app.db.models import ProxyEvent, User
+from app.db.models import ProxyEvent, Target, User
 from app.db.session import get_db
 from app.guardrails.input_scanner import scan_input
 from app.guardrails.output_scanner import scan_output
@@ -85,38 +85,66 @@ async def _run_proxy(
     start = time.time()
     llm = get_llm()
 
+    # Unified playground: when a registered target is referenced, put the firewall
+    # in front of ITS system prompt (rather than a free-form one).
+    system_prompt = body.system_prompt
+    if body.target_id:
+        target = await db.get(Target, body.target_id)
+        if not target or target.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Target not found.")
+        system_prompt = target.system_prompt
+
     input_scan = {"action": "PASS", "reason": "guardrails disabled", "owasp_ref": "",
                   "classifier_score": 0.0, "layer": "off", "signals": []}
     output_scan = {"action": "PASS", "reason": "guardrails disabled", "owasp_ref": "",
                    "findings": []}
 
-    # [2] INPUT SCAN
+    # [2] INPUT SCAN — user message AND any untrusted document (indirect-injection
+    # defense: tool/RAG content is scanned with the same filter as user text).
     if body.guardrails:
-        result = await scan_input(body.message)
-        input_scan = {
-            "action": result.action, "reason": result.reason,
-            "owasp_ref": result.owasp_ref, "classifier_score": result.classifier_score,
-            "layer": result.layer, "signals": result.signals,
-        }
-        if result.action == "BLOCK":
-            await _log_event(db, user, "input", "BLOCK", result.reason,
-                             result.owasp_ref, body.message)
-            await _publish({"direction": "input", "action": "BLOCK",
-                            "owasp_ref": result.owasp_ref, "reason": result.reason})
-            return ProxyChatResponse(
-                blocked=True, stage="input", action="BLOCK", reason=result.reason,
-                owasp_ref=result.owasp_ref,
-                response="🛡️ BLOCKED at input by Sentinel guardrail.",
-                classifier_score=result.classifier_score,
-                input_scan=input_scan, output_scan=output_scan,
-                latency_ms=int((time.time() - start) * 1000),
-            )
+        for source, text in (("input", body.message), ("document", body.document)):
+            if not text:
+                continue
+            result = await scan_input(text)
+            scan_dict = {
+                "action": result.action, "reason": result.reason,
+                "owasp_ref": result.owasp_ref, "classifier_score": result.classifier_score,
+                "layer": result.layer, "signals": result.signals,
+            }
+            if source == "input":
+                input_scan = scan_dict
+            if result.action == "BLOCK":
+                stage_label = source
+                reason = (
+                    result.reason if source == "input"
+                    else f"Indirect injection in retrieved document — {result.reason}"
+                )
+                if source == "document":
+                    input_scan = scan_dict
+                await _log_event(db, user, source, "BLOCK", reason,
+                                 result.owasp_ref, text)
+                await _publish({"direction": source, "action": "BLOCK",
+                                "owasp_ref": result.owasp_ref, "reason": reason})
+                return ProxyChatResponse(
+                    blocked=True, stage=stage_label, action="BLOCK", reason=reason,
+                    owasp_ref=result.owasp_ref,
+                    response=f"🛡️ BLOCKED at {stage_label} by Sentinel guardrail.",
+                    classifier_score=result.classifier_score,
+                    input_scan=input_scan, output_scan=output_scan,
+                    latency_ms=int((time.time() - start) * 1000),
+                )
 
-    # [3] TARGET call
+    # [3] TARGET call — the document (if any) is fed as untrusted context, exactly
+    # as a RAG/tool result would be, so an unguarded target can be injected by it.
+    user_content = body.message
+    if body.document:
+        user_content = (
+            f"{body.message}\n\n<retrieved_document>\n{body.document}\n</retrieved_document>"
+        )
     raw = await llm.complete(
         [
-            {"role": "system", "content": body.system_prompt},
-            {"role": "user", "content": body.message},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
         ],
         purpose="target",
     )
@@ -129,7 +157,7 @@ async def _run_proxy(
 
     # [4] OUTPUT SCAN
     if body.guardrails:
-        out = scan_output(raw, system_prompt=body.system_prompt)
+        out = scan_output(raw, system_prompt=system_prompt)
         output_scan = {"action": out.action, "reason": out.reason,
                        "owasp_ref": out.owasp_ref, "findings": out.findings}
         final = out.redacted

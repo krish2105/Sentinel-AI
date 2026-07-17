@@ -85,7 +85,11 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
 - **Scored Report** — per-attack verdict / severity / OWASP citation / payload / target response / mitigation, an aggregate posture score, verdict & severity charts, a **blast-radius diagram**, and **JSON / PDF export**.
 - **Firewall Playground** — send a malicious prompt with guardrails **ON** (watch the `BLOCKED` stamp slam in with the OWASP ref) vs **OFF** (watch it leak). The contrast *is* the demo.
 - **In-app A/B before/after** — one click runs the *same* attack with guardrails off then on and renders the leaked-vs-blocked contrast side by side (`POST /proxy/ab`). The headline "83% ASR reduction" is now a live product surface, not just an offline eval script.
-- **Live firewall feed** — a real-time stream of every proxy block, consuming the `/proxy/activity/stream` SSE endpoint.
+- **Unified playground** — put the firewall in front of a *registered target* (its system prompt + declared tools) or a free-form prompt, and scan an untrusted *retrieved document* alongside the message (indirect-injection defense).
+- **Shadow-mode approval queue** — write/external tool calls are held for human approval instead of executing; approve/deny them from an interactive queue (`/approvals`), the interactive half of least-privilege (LLM06).
+- **Truly-indirect injection** — the indirect-injection attack hides its payload inside a retrieved document the target ingests as context (not the user turn); findings are tagged **via document** so the vector is explicit.
+- **Live firewall feed** — a real-time stream of every proxy block and held tool call, consuming the `/proxy/activity/stream` SSE endpoint.
+- **Langfuse trace deep-links** — when tracing is configured, each run/report shows a **View trace** link straight to the inspectable Langfuse trace.
 - **Accounts & API keys** — register for a personal API key, sign in (JWT), and get account-scoped targets/runs/reports; a shared **demo mode** keeps everything usable with zero signup.
 - **Light / dark theme** — a first-class, no-flash theme toggle (system-preference aware, persisted) across the whole app.
 - **Dashboard** — posture trend over time, per-category failure-cluster scatter, and a live firewall-activity feed.
@@ -106,7 +110,8 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
 │    /runs   → LangGraph agent graph → LLM (Groq free / Ollama / mock) │
 │                  ├── hybrid RAG retriever → pgvector threat catalog  │
 │                  └── deberta injection classifier (local)           │
-│    /proxy  → Guardrail pipeline (input scan → target → output scan)  │
+│    /proxy  → Guardrail pipeline (input + doc scan → target → output) │
+│    /approvals → shadow-mode queue: hold write/external tool calls    │
 │    /auth   → register / issue API key · JWT · account-scoped data    │
 │    core: JWT + bcrypt API keys · Fernet-encrypted target secrets ·   │
 │          security headers + body cap · rate limit · audit log        │
@@ -114,7 +119,8 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
                 │
       ┌─────────▼──────────┐
       │  Postgres+pgvector  │  users · targets · runs · attacks
-      │  (Supabase/Render)  │  proxy_events · audit_log · threat_chunks
+      │  (Supabase/Render)  │  proxy_events · tool_approvals · audit_log
+      │                     │  threat_chunks
       └─────────────────────┘
 ```
 

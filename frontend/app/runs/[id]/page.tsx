@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { Terminal, ShieldAlert, ArrowRight, Zap, Loader2 } from "lucide-react";
+import { Terminal, ShieldAlert, ArrowRight, Zap, Loader2, Activity, FileText } from "lucide-react";
 import { api, ATTACK_CATEGORIES, type Attack } from "@/lib/api";
 import { useRunStream } from "@/hooks/useRunStream";
 import { OwaspCoverageGrid } from "@/components/OwaspCoverageGrid";
@@ -18,6 +18,7 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
   const runId = params.id;
   const { events, status, progress } = useRunStream(runId);
   const [posture, setPosture] = useState<number | null>(null);
+  const [traceUrl, setTraceUrl] = useState<string | null>(null);
   const [gateOpen, setGateOpen] = useState(false);
 
   // Derive streaming attacks from verdict events.
@@ -36,6 +37,7 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
         citation: e.data.citation ?? "",
         mitigation: e.data.mitigation ?? "",
         blast_radius: e.data.blast_radius ?? 1,
+        injection_vector: e.data.injection_vector ?? "direct",
       }));
   }, [events]);
 
@@ -44,7 +46,10 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const done = events.find((e) => e.type === "run_completed");
-    if (done) setPosture(done.data.posture_score);
+    if (done) {
+      setPosture(done.data.posture_score);
+      if (done.data.trace_url) setTraceUrl(done.data.trace_url);
+    }
     setGateOpen(events.some((e) => e.type === "human_gate") && !events.some((e) => e.type === "armed"));
   }, [events]);
 
@@ -63,13 +68,26 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
           </h1>
         </div>
         {status === "done" && (
-          <Link
-            href={`/reports/${runId}`}
-            className="group inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base hover:shadow-glow transition-shadow"
-          >
-            View full report
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="flex gap-3">
+            {traceUrl && (
+              <a
+                href={traceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2.5 text-sm hover:border-cyan/50 transition-colors"
+                title="Open this run's trace in Langfuse"
+              >
+                <Activity className="h-4 w-4" /> View trace
+              </a>
+            )}
+            <Link
+              href={`/reports/${runId}`}
+              className="group inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 font-medium text-base hover:shadow-glow transition-shadow"
+            >
+              View full report
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         )}
       </div>
 
@@ -180,6 +198,12 @@ function AttackFeed({
                 <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-fg/5 text-muted">
                   {a.owasp_ref}
                 </span>
+                {a.injection_vector === "document" && (
+                  <FileText
+                    className="h-3 w-3 text-warning shrink-0"
+                    aria-label="Indirect — via retrieved document"
+                  />
+                )}
                 <span className="flex-1 text-sm truncate">{catLabel(a.category)}</span>
                 <span className="mono text-[10px] text-muted hidden sm:block">
                   {(a.classifier_score * 100).toFixed(0)}%

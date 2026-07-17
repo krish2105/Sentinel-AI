@@ -29,10 +29,10 @@ leak; `guardrails=true` blocks it. Measured reduction: **83.3%** attack-success-
 
 | OWASP | Risk | Control in Sentinel | Where |
 |---|---|---|---|
-| **LLM01** | Prompt injection | Two-tier input scan (classifier + semantic firewall); structural separation of system vs user content; the input filter also runs on tool/RAG content (indirect injection). | `guardrails/input_scanner.py`, `ml/injection_model.py` |
+| **LLM01** | Prompt injection | Two-tier input scan (classifier + semantic firewall); structural separation of system vs user content. **Indirect injection is modeled end-to-end**: the payload is hidden in a retrieved document the target ingests as context, and the same input filter scans that document (proxy `document` field / attack `injection_vector`). | `guardrails/input_scanner.py`, `ml/injection_model.py`, `agents/nodes.py` |
 | **LLM02** | Sensitive info disclosure | Output PII/secret scanner + redaction; exfil deny-list; secrets never echoed. | `guardrails/output_scanner.py`, `guardrails/policy.py` |
 | **LLM05** | Improper output handling | Structured/validated outputs; model text is never `eval`'d; JSON parsing only. | `llm/client.py` (`complete_json`) |
-| **LLM06** | Excessive agency | Tool allow-list + least privilege; `write`/`external` tools require shadow-mode human approval. | `guardrails/policy.py` |
+| **LLM06** | Excessive agency | Tool allow-list + least privilege; `write`/`external` tools are **held in a shadow-mode approval queue** for interactive human approve/deny instead of executing. | `guardrails/policy.py`, `api/approvals.py` |
 | **LLM07** | System-prompt leakage | Output leak detector (similarity to stored system prompt); prompt never in a retrievable store; extraction attempts flagged. | `guardrails/output_scanner.py` |
 | **LLM08** | Vector/embedding weakness | RAG sources are trusted-only; ingested docs are integrity-controlled; poisoning simulation is sandboxed. | `rag/ingest.py` |
 | **ASI01** | Agent goal hijacking | Judge verifies the outcome vs the declared objective; human gate on redirection. | `agents/nodes.py` (judge) |

@@ -125,6 +125,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
             yield _sse("payload_generated", {
                 "index": index, "category": item["category"],
                 "payload": state["current"]["payload"],
+                "injection_vector": state["current"].get("injection_vector", "direct"),
             })
             await asyncio.sleep(0.05)
 
@@ -167,6 +168,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
                 citation=attack.get("citation", ""),
                 mitigation=attack.get("mitigation", ""),
                 blast_radius=attack.get("blast_radius", 1),
+                injection_vector=attack.get("injection_vector", "direct"),
             )
             db.add(model)
             await db.commit()
@@ -177,6 +179,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
             "id": model.id,
             "category": attack["category"],
             "owasp_ref": attack["owasp_ref"],
+            "injection_vector": attack.get("injection_vector", "direct"),
             "verdict": attack["verdict"],
             "severity": attack["severity"],
             "classifier_score": attack.get("classifier_score", 0.0),
@@ -197,6 +200,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
         run.report = report
         run.finished_at = datetime.now(timezone.utc)
         await db.commit()
+        trace_link = run.trace_url
 
     trace_score(trace, name="posture_score", value=score / 100,
                 comment=f"{report.get('successful_attacks', 0)}/{report.get('total_attacks', 0)} attacks succeeded")
@@ -204,6 +208,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
 
     yield _sse("run_completed", {
         "run_id": run_id, "posture_score": score, "report": report,
+        "trace_url": trace_link,
     })
 
 

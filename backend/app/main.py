@@ -10,7 +10,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import auth, dashboard, evals, proxy, reports, runs, targets
+from app.api import approvals, auth, dashboard, evals, proxy, reports, runs, targets
 from app.config import settings
 from app.db.session import init_db
 from app.llm.client import get_llm
@@ -158,6 +158,7 @@ for r in (
     targets.router,
     runs.router,
     proxy.router,
+    approvals.router,
     reports.router,
     dashboard.router,
     evals.router,

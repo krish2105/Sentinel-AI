@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown, ShieldAlert, ShieldCheck, BookMarked } from "lucide-react";
+import { ChevronDown, ShieldAlert, ShieldCheck, BookMarked, FileText } from "lucide-react";
 import type { Attack } from "@/lib/api";
 import { ATTACK_CATEGORIES } from "@/lib/api";
 import { SeverityBadge, VerdictChip, PayloadViewer } from "./primitives";
@@ -38,6 +38,14 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
             <span className="mono text-[10px] text-muted px-1.5 py-0.5 rounded bg-fg/5">
               {attack.owasp_ref}
             </span>
+            {attack.injection_vector === "document" && (
+              <span
+                className="mono text-[10px] text-warning px-1.5 py-0.5 rounded bg-warning/10 inline-flex items-center gap-1"
+                title="Delivered indirectly — hidden inside a retrieved document the target ingested"
+              >
+                <FileText className="h-3 w-3" /> via document
+              </span>
+            )}
           </div>
           <div className="text-xs text-muted mt-0.5 truncate">
             classifier {(attack.classifier_score * 100).toFixed(0)}% · blast radius{" "}
@@ -61,7 +69,25 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 space-y-3">
-              <PayloadViewer label="Attack payload" text={attack.payload} tone="danger" />
+              {attack.injection_vector === "document" && (
+                <div className="rounded-lg bg-warning/[0.07] border border-warning/25 p-3 flex items-start gap-2">
+                  <FileText className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+                  <p className="text-xs text-fg/75 leading-relaxed">
+                    <b className="text-warning">Indirect injection.</b> The user request was
+                    benign — this payload was hidden inside a retrieved document the target
+                    ingested as context, so the instruction never appeared in the user turn.
+                  </p>
+                </div>
+              )}
+              <PayloadViewer
+                label={
+                  attack.injection_vector === "document"
+                    ? "Poisoned document (payload)"
+                    : "Attack payload"
+                }
+                text={attack.payload}
+                tone="danger"
+              />
               <PayloadViewer
                 label="Target response"
                 text={attack.target_response}

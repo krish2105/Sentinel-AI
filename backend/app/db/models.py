@@ -83,6 +83,17 @@ class Run(Base):
         back_populates="run", cascade="all, delete-orphan"
     )
 
+    @property
+    def trace_url(self) -> str | None:
+        """Deep-link to this run's Langfuse trace (None when tracing is off).
+
+        The trace id is the run id (see engine.start_trace), so the link is
+        derivable without storing anything extra.
+        """
+        from app.observability.tracing import trace_url as _trace_url
+
+        return _trace_url(self.id)
+
 
 class Attack(Base):
     __tablename__ = "attacks"
@@ -99,6 +110,9 @@ class Attack(Base):
     citation: Mapped[str] = mapped_column(Text, default="")
     mitigation: Mapped[str] = mapped_column(Text, default="")
     blast_radius: Mapped[int] = mapped_column(Integer, default=1)
+    # How the payload reached the target: "direct" (user turn) or "document"
+    # (hidden inside retrieved/tool content — a truly-indirect injection).
+    injection_vector: Mapped[str] = mapped_column(String, default="direct")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     run: Mapped["Run"] = relationship(back_populates="attacks")
@@ -115,6 +129,32 @@ class ProxyEvent(Base):
     owasp_ref: Mapped[str] = mapped_column(String, default="")
     payload_hash: Mapped[str] = mapped_column(String, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class ToolApproval(Base):
+    """A write/external tool call held for shadow-mode human approval (LLM06).
+
+    When the guardrail policy flags a privileged tool call, it is parked here as
+    ``pending`` instead of executing, until a human approves or denies it.
+    """
+
+    __tablename__ = "tool_approvals"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    user_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    target_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    target_name: Mapped[str] = mapped_column(String, default="")
+    tool_name: Mapped[str] = mapped_column(String)
+    risk: Mapped[str] = mapped_column(String, default="write")  # write | external
+    arguments: Mapped[str] = mapped_column(Text, default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    owasp_ref: Mapped[str] = mapped_column(String, default="LLM06")
+    status: Mapped[str] = mapped_column(String, default="pending")  # pending|approved|denied
+    decided_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class AuditLog(Base):
