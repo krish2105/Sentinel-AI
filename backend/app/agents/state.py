@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Annotated, List, Literal, TypedDict
+from typing import Annotated, Any, List, Literal, TypedDict
 
 
 class Attack(TypedDict, total=False):
@@ -30,3 +30,4 @@ class AgentState(TypedDict, total=False):
     attacks: Annotated[List[Attack], operator.add]
     posture_score: int
     report: dict
+    _trace: Any  # optional Langfuse trace handle; None when tracing is disabled

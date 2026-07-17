@@ -22,6 +22,7 @@ import httpx
 
 from app.config import settings
 from app.llm.mock_engine import mock_chat
+from app.observability.tracing import log_generation
 
 Message = Dict[str, str]
 
@@ -43,6 +44,14 @@ class LLMClient:
     def provider(self) -> str:
         return self._provider
 
+    @property
+    def model_name(self) -> str:
+        if self._provider == "groq":
+            return settings.groq_model
+        if self._provider == "ollama":
+            return settings.ollama_model
+        return "mock-engine"
+
     async def complete(
         self,
         messages: List[Message],
@@ -50,19 +59,32 @@ class LLMClient:
         temperature: float = 0.7,
         max_tokens: int = 1024,
         purpose: str = "generic",
+        trace: Any = None,
     ) -> str:
-        """Return a single completion string for a chat message list."""
+        """Return a single completion string for a chat message list.
+
+        ``trace`` is an optional Langfuse trace handle (see
+        ``app.observability.tracing``); when tracing is disabled it is ``None``
+        and every call below is a no-op, so this costs nothing by default.
+        """
         if self._provider == "groq":
             try:
-                return await self._groq(messages, temperature, max_tokens)
+                result = await self._groq(messages, temperature, max_tokens)
             except Exception:  # pragma: no cover - network fallback
-                return mock_chat(messages, purpose=purpose)
-        if self._provider == "ollama":
+                result = mock_chat(messages, purpose=purpose)
+        elif self._provider == "ollama":
             try:
-                return await self._ollama(messages, temperature, max_tokens)
+                result = await self._ollama(messages, temperature, max_tokens)
             except Exception:  # pragma: no cover
-                return mock_chat(messages, purpose=purpose)
-        return mock_chat(messages, purpose=purpose)
+                result = mock_chat(messages, purpose=purpose)
+        else:
+            result = mock_chat(messages, purpose=purpose)
+
+        log_generation(
+            trace, name=purpose, model=self.model_name, prompt=messages,
+            completion=result, metadata={"temperature": temperature},
+        )
+        return result
 
     async def complete_json(
         self,
@@ -71,10 +93,12 @@ class LLMClient:
         temperature: float = 0.2,
         max_tokens: int = 1024,
         purpose: str = "generic",
+        trace: Any = None,
     ) -> Dict[str, Any]:
         """Return parsed JSON. Falls back to mock JSON on parse failure."""
         raw = await self.complete(
-            messages, temperature=temperature, max_tokens=max_tokens, purpose=purpose
+            messages, temperature=temperature, max_tokens=max_tokens,
+            purpose=purpose, trace=trace,
         )
         parsed = _extract_json(raw)
         if parsed is None:

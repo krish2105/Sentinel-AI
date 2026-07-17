@@ -70,12 +70,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/health", tags=["meta"])
 async def health():
+    from app.observability.tracing import enabled as tracing_enabled
+
     return {
         "status": "ok",
         "service": settings.app_name,
         "llm_provider": get_llm().provider,
         "heavy_ml": settings.enable_heavy_ml,
         "database": "postgres" if settings.is_postgres else "sqlite",
+        "tracing": tracing_enabled(),
     }
 
 

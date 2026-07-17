@@ -17,6 +17,7 @@ from app.core.attack_library import CATEGORIES
 from app.guardrails.policy import blast_radius
 from app.llm.client import get_llm
 from app.ml.injection_model import classify
+from app.observability.tracing import log_span
 from app.rag.retriever import first_citation, retrieve
 
 _SEVERITY_RANK = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
@@ -54,6 +55,7 @@ async def attacker_node(state: AgentState, db: AsyncSession) -> dict:
         ],
         temperature=0.9,
         purpose=f"attacker:{category}",
+        trace=state.get("_trace"),
     )
     return {
         "current": {
@@ -68,6 +70,12 @@ def classifier_node(state: AgentState) -> dict:
     """Deterministic ML gate — no LLM."""
     item = state["current"]
     cls = classify(item["payload"])
+    log_span(
+        state.get("_trace"), name="classifier",
+        input_data={"payload": item["payload"][:400]},
+        output_data={"label": cls.label, "score": cls.score, "signals": cls.signals},
+        metadata={"engine": cls.engine},
+    )
     return {
         "current": {
             **item,
@@ -95,6 +103,7 @@ async def target_harness_node(state: AgentState, db: AsyncSession) -> dict:
             ],
             temperature=0.7,
             purpose="target",
+            trace=state.get("_trace"),
         )
     return {"current": {**item, "target_response": response.strip()}}
 
@@ -156,6 +165,7 @@ async def judge_node(state: AgentState) -> dict:
             },
         ],
         purpose=f"judge:{category}",
+        trace=state.get("_trace"),
     )
 
     verdict_val = str(verdict.get("verdict", "SAFE")).upper()

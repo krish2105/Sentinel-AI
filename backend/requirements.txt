@@ -19,6 +19,10 @@ alembic==1.14.0
 # --- Optional export ---
 reportlab==4.2.5
 
+# --- Optional observability (enable by setting LANGFUSE_PUBLIC_KEY/SECRET_KEY) ---
+# Lightweight HTTP-based client; a no-op everywhere in the app when keys are blank.
+langfuse==2.53.9
+
 # --- Optional heavy ML (enable with ENABLE_HEAVY_ML=true) ---
 # Install separately to keep the base image small:
 #   pip install -r requirements-ml.txt

@@ -21,6 +21,9 @@ from app.core.attack_library import CATEGORIES, LIVE_SENSITIVE_CATEGORIES, build
 from app.db.models import Attack as AttackModel
 from app.db.models import Run, Target
 from app.db.session import SessionLocal
+from app.observability.tracing import flush as flush_traces
+from app.observability.tracing import score as trace_score
+from app.observability.tracing import start_trace
 
 # In-process registry of live runs so /arm can release the gate.
 _ARM_EVENTS: Dict[str, asyncio.Event] = {}
@@ -61,6 +64,11 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
         run.status = "running"
         await db.commit()
 
+    trace = start_trace(
+        run_id, name="red-team-run",
+        metadata={"target": target["name"], "categories": run.selected_categories},
+    )
+
     state: AgentState = {
         "run_id": run_id,
         "target": target,
@@ -68,6 +76,7 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
         "live_armed": run.live_armed,
         "queue": queue,
         "attacks": [],
+        "_trace": trace,
     }
 
     total = len(queue)
@@ -185,6 +194,10 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
         run.report = report
         run.finished_at = datetime.now(timezone.utc)
         await db.commit()
+
+    trace_score(trace, name="posture_score", value=score / 100,
+                comment=f"{report.get('successful_attacks', 0)}/{report.get('total_attacks', 0)} attacks succeeded")
+    flush_traces()
 
     yield _sse("run_completed", {
         "run_id": run_id, "posture_score": score, "report": report,
