@@ -1,0 +1,7 @@
+# Heavy ML stack — enables the real deberta injection classifier,
+# sentence-transformers embeddings, and the bge cross-encoder reranker.
+# Set ENABLE_HEAVY_ML=true after installing. CPU wheels are fine for the MVP.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1
+transformers==4.47.1
+sentence-transformers==3.3.1

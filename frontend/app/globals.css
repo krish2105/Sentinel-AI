@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* {
+  border-color: theme("colors.line");
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: theme("colors.base");
+  color: #e6e9f0;
+  font-family: var(--font-inter);
+  overflow-x: hidden;
+}
+
+/* Ambient security-console grid backdrop */
+.bg-console {
+  background-color: #0a0b0f;
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(34, 233, 211, 0.08), transparent 55%),
+    linear-gradient(rgba(35, 40, 56, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 40, 56, 0.35) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+}
+
+/* Glassmorphism — used surgically on nav, modals, finding cards */
+.glass {
+  background: rgba(18, 20, 28, 0.6);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(35, 40, 56, 0.8);
+}
+
+.gradient-border {
+  position: relative;
+  background: theme("colors.surface");
+  border: 1px solid theme("colors.line");
+  transition: border-color 0.3s ease;
+}
+.gradient-border:hover {
+  border-color: rgba(34, 233, 211, 0.5);
+  box-shadow: 0 0 0 1px rgba(34, 233, 211, 0.2), theme("boxShadow.card");
+}
+
+.text-gradient {
+  background: linear-gradient(120deg, #ffffff 20%, #22e9d3 60%, #7cf2e4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0b0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #232838;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e3446;
+}
+
+/* Focus rings — always visible for keyboard users */
+:focus-visible {
+  outline: 2px solid #22e9d3;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Terminal typing caret */
+.caret::after {
+  content: "▋";
+  color: #22e9d3;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

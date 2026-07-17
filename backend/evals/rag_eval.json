@@ -1,0 +1,87 @@
+{
+  "n": 8,
+  "context_precision_at_3": 1.0,
+  "hits": 8,
+  "per_category": [
+    {
+      "category": "direct_injection",
+      "expected_ref": "LLM01",
+      "retrieved": [
+        "LLM01",
+        "AML.T0051",
+        "LLM07"
+      ],
+      "hit": true
+    },
+    {
+      "category": "indirect_injection",
+      "expected_ref": "LLM01",
+      "retrieved": [
+        "LLM05",
+        "ASI10",
+        "LLM01"
+      ],
+      "hit": true
+    },
+    {
+      "category": "system_prompt_leak",
+      "expected_ref": "LLM07",
+      "retrieved": [
+        "LLM07",
+        "ASI01",
+        "LLM02"
+      ],
+      "hit": true
+    },
+    {
+      "category": "jailbreak",
+      "expected_ref": "LLM01",
+      "retrieved": [
+        "AML.T0054",
+        "ASI10",
+        "LLM01"
+      ],
+      "hit": true
+    },
+    {
+      "category": "sensitive_disclosure",
+      "expected_ref": "LLM02",
+      "retrieved": [
+        "LLM02",
+        "AML.T0024",
+        "AML.T0057"
+      ],
+      "hit": true
+    },
+    {
+      "category": "excessive_agency",
+      "expected_ref": "LLM06",
+      "retrieved": [
+        "ASI02",
+        "LLM06",
+        "AML.T0053"
+      ],
+      "hit": true
+    },
+    {
+      "category": "goal_hijacking",
+      "expected_ref": "ASI01",
+      "retrieved": [
+        "ASI01",
+        "LLM01",
+        "ASI05"
+      ],
+      "hit": true
+    },
+    {
+      "category": "data_poisoning",
+      "expected_ref": "ASI05",
+      "retrieved": [
+        "ASI05",
+        "LLM04",
+        "AML.T0018"
+      ],
+      "hit": true
+    }
+  ]
+}

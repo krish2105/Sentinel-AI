@@ -1,0 +1,29 @@
+# Render Blueprint — free-tier backend + Postgres.
+# Deploy: push to GitHub, then "New +" → "Blueprint" on render.com and point at this repo.
+services:
+  - type: web
+    name: sentinel-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentinel-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false # set to your Vercel URL, e.g. https://sentinel-ai.vercel.app
+      - key: GROQ_API_KEY
+        sync: false # optional free Groq key; blank => deterministic mock engine
+      - key: ENABLE_HEAVY_ML
+        value: "false"
+
+databases:
+  - name: sentinel-db
+    plan: free
+    # Enable the pgvector extension once from the Render dashboard SQL console:
+    #   CREATE EXTENSION IF NOT EXISTS vector;
