@@ -24,6 +24,7 @@ node_modules/
 .next/
 out/
 .vercel/
+*.tsbuildinfo
 
 # OS / editor
 .DS_Store

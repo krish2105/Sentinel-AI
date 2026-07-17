@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents import nodes
 from app.agents.state import AgentState
 from app.core.attack_library import CATEGORIES, LIVE_SENSITIVE_CATEGORIES, build_queue
+from app.core.security import decrypt_headers
 from app.db.models import Attack as AttackModel
 from app.db.models import Run, Target
 from app.db.session import SessionLocal
@@ -56,6 +57,8 @@ async def run_engine(run_id: str) -> AsyncGenerator[str, None]:
         target = {
             "system_prompt": target_obj.system_prompt,
             "endpoint_url": target_obj.endpoint_url,
+            # Decrypt stored endpoint headers (API keys) only for the live call;
+            "_headers": decrypt_headers(target_obj.endpoint_headers_enc),
             "tools": target_obj.tools or [],
             "consent": target_obj.consent,
             "name": target_obj.name,

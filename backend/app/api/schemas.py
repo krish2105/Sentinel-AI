@@ -113,3 +113,13 @@ class ProxyChatResponse(BaseModel):
     input_scan: dict
     output_scan: dict
     latency_ms: int
+
+
+class ProxyABResponse(BaseModel):
+    """Before/after result: the same attack with guardrails off vs on."""
+
+    message: str
+    without_guardrails: ProxyChatResponse
+    with_guardrails: ProxyChatResponse
+    neutralized: bool  # leaked when off, stopped when on
+    owasp_ref: str

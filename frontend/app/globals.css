@@ -2,13 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/*
+ * Theme tokens as space-separated RGB channels so Tailwind's `<alpha-value>`
+ * opacity modifiers work (e.g. bg-cyan/10). Dark is the default console look;
+ * [data-theme="light"] is a deliberately designed light palette, not an invert.
+ */
+:root,
+:root[data-theme="dark"] {
   --font-inter: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --c-base: 10 11 15;        /* #0A0B0F page */
+  --c-surface: 18 20 28;     /* #12141C */
+  --c-surface-2: 24 27 38;   /* #181B26 */
+  --c-line: 35 40 56;        /* #232838 */
+  --c-fg: 230 233 240;       /* #E6E9F0 primary text */
+  --c-muted: 138 147 166;    /* #8A93A6 */
+  --c-cyan: 34 233 211;      /* #22E9D3 brand accent */
+  --c-danger: 255 77 94;     /* #FF4D5E */
+  --c-warning: 255 176 32;   /* #FFB020 */
+
+  --grid-line: 35 40 56;
+  --grid-alpha: 0.35;
+  --glow-alpha: 0.08;
+  --glass-bg: 18 20 28;
+  --glass-alpha: 0.6;
+  --glass-border: 35 40 56;
+  --scroll-track: 10 11 15;
+  --scroll-thumb: 35 40 56;
+  --gradient-from: 255 255 255;
+}
+
+:root[data-theme="light"] {
+  --c-base: 247 249 252;     /* #F7F9FC soft off-white page */
+  --c-surface: 255 255 255;  /* #FFFFFF cards */
+  --c-surface-2: 238 242 248;/* #EEF2F8 */
+  --c-line: 214 222 234;     /* #D6DEEA borders */
+  --c-fg: 12 18 32;          /* #0C1220 ink */
+  --c-muted: 90 100 120;     /* #5A6478 */
+  --c-cyan: 13 148 136;      /* #0D9488 teal-600 — AA contrast on white */
+  --c-danger: 220 38 55;     /* #DC2637 */
+  --c-warning: 180 120 6;    /* #B47806 */
+
+  --grid-line: 148 163 184;
+  --grid-alpha: 0.18;
+  --glow-alpha: 0.10;
+  --glass-bg: 255 255 255;
+  --glass-alpha: 0.72;
+  --glass-border: 214 222 234;
+  --scroll-track: 238 242 248;
+  --scroll-thumb: 200 210 224;
+  --gradient-from: 12 18 32;
 }
 
 * {
-  border-color: theme("colors.line");
+  border-color: rgb(var(--c-line));
 }
 
 html {
@@ -17,43 +65,49 @@ html {
 }
 
 body {
-  background-color: theme("colors.base");
-  color: #e6e9f0;
+  background-color: rgb(var(--c-base));
+  color: rgb(var(--c-fg));
   font-family: var(--font-inter);
   overflow-x: hidden;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* Ambient security-console grid backdrop */
+/* Ambient security-console grid backdrop (re-themes via variables) */
 .bg-console {
-  background-color: #0a0b0f;
+  background-color: rgb(var(--c-base));
   background-image:
-    radial-gradient(circle at 50% -10%, rgba(34, 233, 211, 0.08), transparent 55%),
-    linear-gradient(rgba(35, 40, 56, 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(35, 40, 56, 0.35) 1px, transparent 1px);
+    radial-gradient(circle at 50% -10%, rgb(var(--c-cyan) / var(--glow-alpha)), transparent 55%),
+    linear-gradient(rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--grid-line) / var(--grid-alpha)) 1px, transparent 1px);
   background-size: 100% 100%, 44px 44px, 44px 44px;
 }
 
 /* Glassmorphism — used surgically on nav, modals, finding cards */
 .glass {
-  background: rgba(18, 20, 28, 0.6);
+  background: rgb(var(--glass-bg) / var(--glass-alpha));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(35, 40, 56, 0.8);
+  border: 1px solid rgb(var(--glass-border) / 0.8);
 }
 
 .gradient-border {
   position: relative;
-  background: theme("colors.surface");
-  border: 1px solid theme("colors.line");
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-line));
   transition: border-color 0.3s ease;
 }
 .gradient-border:hover {
-  border-color: rgba(34, 233, 211, 0.5);
-  box-shadow: 0 0 0 1px rgba(34, 233, 211, 0.2), theme("boxShadow.card");
+  border-color: rgb(var(--c-cyan) / 0.5);
+  box-shadow: 0 0 0 1px rgb(var(--c-cyan) / 0.2), theme("boxShadow.card");
 }
 
 .text-gradient {
-  background: linear-gradient(120deg, #ffffff 20%, #22e9d3 60%, #7cf2e4 100%);
+  background: linear-gradient(
+    120deg,
+    rgb(var(--gradient-from)) 20%,
+    rgb(var(--c-cyan)) 60%,
+    rgb(var(--c-cyan) / 0.7) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -65,19 +119,19 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0b0f;
+  background: rgb(var(--scroll-track));
 }
 ::-webkit-scrollbar-thumb {
-  background: #232838;
+  background: rgb(var(--scroll-thumb));
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2e3446;
+  background: rgb(var(--c-muted) / 0.7);
 }
 
 /* Focus rings — always visible for keyboard users */
 :focus-visible {
-  outline: 2px solid #22e9d3;
+  outline: 2px solid rgb(var(--c-cyan));
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -89,7 +143,7 @@ body {
 /* Terminal typing caret */
 .caret::after {
   content: "▋";
-  color: #22e9d3;
+  color: rgb(var(--c-cyan));
   animation: blink 1s steps(1) infinite;
 }
 @keyframes blink {

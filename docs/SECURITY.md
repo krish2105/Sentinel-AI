@@ -59,8 +59,9 @@ deterministic injection exploitability. Sentinel breaks it with:
 - **Auth** — per-user API keys hashed with bcrypt; JWT sessions; per-client rate limiting (sliding window).
 - **Least privilege** — the platform never executes arbitrary code from model output; live-target execution is opt-in + consent-gated + rate-limited.
 - **Audit trail** — append-only `audit_log` of every run, armed live attack, and proxy block (actor, timestamp, payload *hash* — never the raw payload).
-- **Secrets** — provider keys in env vars only; never logged, never returned; `.env` git-ignored; `.env.example` documents shape only.
-- **Input hardening** — request size limits; upload sanitization (strip active content); **unicode NFKC normalization + homoglyph folding** to defeat hidden-character / confusable attacks; CORS locked to the frontend origin.
+- **Secrets** — provider keys in env vars only; never logged, never returned; `.env` git-ignored; `.env.example` documents shape only. **Live-target endpoint headers (API keys) are Fernet-encrypted at rest** (`core/security.py::encrypt_headers`) and decrypted only for the outbound live call — never returned by the API.
+- **Response headers** — `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, a strict JSON-only `Content-Security-Policy`, and HSTS in production, applied globally via middleware (`main.py`).
+- **Input hardening** — request **body-size cap** (413 on oversize) + `TrustedHost` allow-listing; upload sanitization (strip active content); **unicode NFKC normalization + homoglyph folding** to defeat hidden-character / confusable attacks; CORS locked to the frontend origin.
 - **No internal leakage** — a global exception handler returns a generic 500; internals are logged, never sent to the client.
 
 ## Responsible-use guardrails

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Trash2, Play, Cpu, X, ShieldQuestion } from "lucide-react";
 import { api, ATTACK_CATEGORIES, type Target, type Tool } from "@/lib/api";
+import { useToast } from "@/components/Toaster";
 
 const SAMPLE = {
   name: "ACME Support Agent",
@@ -18,6 +19,7 @@ const SAMPLE = {
 };
 
 export default function TargetsPage() {
+  const { toast } = useToast();
   const [targets, setTargets] = useState<Target[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -26,7 +28,12 @@ export default function TargetsPage() {
     setLoading(true);
     try {
       setTargets(await api.listTargets());
-    } catch {}
+    } catch (e) {
+      toast(
+        e instanceof Error ? e.message : "Couldn't load targets — the backend may be waking up (free tier sleeps). Retrying shortly usually works.",
+        "error"
+      );
+    }
     setLoading(false);
   };
   useEffect(() => {
@@ -108,6 +115,7 @@ function TargetRow({
   onDeleted: () => void;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [launching, setLaunching] = useState(false);
 
   const launch = async () => {
@@ -118,7 +126,8 @@ function TargetRow({
         selected_categories: ["all"],
       });
       router.push(`/runs/${run.id}`);
-    } catch {
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't launch run.", "error");
       setLaunching(false);
     }
   };
@@ -156,7 +165,7 @@ function TargetRow({
             </span>
           ))}
           {target.endpoint_url && (
-            <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-muted">
+            <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-fg/5 text-muted">
               live endpoint
             </span>
           )}
@@ -198,6 +207,7 @@ function CreateModal({
   const [toolRisk, setToolRisk] = useState<Tool["risk"]>("read");
   const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   const useSample = () => {
     setName(SAMPLE.name);
@@ -222,8 +232,10 @@ function CreateModal({
         tools,
         consent,
       } as any);
+      toast("Target registered.", "success");
       onCreated();
-    } catch {
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't save target.", "error");
       setSaving(false);
     }
   };
@@ -245,7 +257,7 @@ function CreateModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Register target</h2>
-          <button onClick={onClose} className="text-muted hover:text-white">
+          <button onClick={onClose} className="text-muted hover:text-fg">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -313,7 +325,7 @@ function CreateModal({
                 {tools.map((t, i) => (
                   <span
                     key={i}
-                    className="mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 flex items-center gap-1"
+                    className="mono text-[10px] px-1.5 py-0.5 rounded bg-fg/5 flex items-center gap-1"
                   >
                     {t.name}·{t.risk}
                     <button
@@ -351,7 +363,7 @@ function CreateModal({
           </button>
           <button
             onClick={onClose}
-            className="rounded-full border border-line px-5 py-2.5 text-white/80"
+            className="rounded-full border border-line px-5 py-2.5 text-fg/80"
           >
             Cancel
           </button>
@@ -361,16 +373,16 @@ function CreateModal({
       <style jsx global>{`
         .input {
           width: 100%;
-          background: #0a0b0f;
-          border: 1px solid #232838;
+          background: rgb(var(--c-base));
+          border: 1px solid rgb(var(--c-line));
           border-radius: 0.6rem;
           padding: 0.6rem 0.8rem;
           font-size: 0.9rem;
-          color: #e6e9f0;
+          color: rgb(var(--c-fg));
           transition: border-color 0.2s;
         }
         .input:focus {
-          border-color: #22e9d3;
+          border-color: rgb(var(--c-cyan));
           outline: none;
         }
       `}</style>

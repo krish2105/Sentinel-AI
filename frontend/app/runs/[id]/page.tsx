@@ -103,7 +103,7 @@ export default function RunConsolePage({ params }: { params: { id: string } }) {
               <div className="flex flex-col items-center justify-center h-[220px] text-muted">
                 <Loader2 className="h-8 w-8 animate-spin text-cyan mb-3" />
                 <span className="text-sm">Scoring in progress…</span>
-                <span className="mono text-2xl mt-2 text-white">
+                <span className="mono text-2xl mt-2 text-fg">
                   {attacks.length}/{total || "…"}
                 </span>
               </div>
@@ -177,7 +177,7 @@ function AttackFeed({
                 style={exploited ? { borderColor: "#FF4D5E44" } : undefined}
               >
                 <span className="mono text-[10px] text-muted w-5">{i + 1}</span>
-                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-muted">
+                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-fg/5 text-muted">
                   {a.owasp_ref}
                 </span>
                 <span className="flex-1 text-sm truncate">{catLabel(a.category)}</span>
@@ -258,7 +258,7 @@ function TerminalLog({ events }: { events: { type: string; data: any }[] }) {
                 ? "text-cyan"
                 : l.startsWith("⚠")
                 ? "text-warning"
-                : "text-white/60"
+                : "text-fg/60"
             }
           >
             {l}

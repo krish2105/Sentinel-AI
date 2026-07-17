@@ -96,7 +96,7 @@ export function Hero() {
             </Link>
             <Link
               href="/proxy"
-              className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 font-medium text-white/80 hover:border-cyan/50 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 font-medium text-fg/80 hover:border-cyan/50 hover:text-fg transition-colors"
             >
               Try the firewall
             </Link>

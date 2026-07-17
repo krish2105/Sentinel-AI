@@ -84,6 +84,10 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
 - **8 attack categories** — direct & indirect injection, system-prompt leak, jailbreak, sensitive-info disclosure, excessive agency, goal hijacking, and data/memory poisoning.
 - **Scored Report** — per-attack verdict / severity / OWASP citation / payload / target response / mitigation, an aggregate posture score, verdict & severity charts, a **blast-radius diagram**, and **JSON / PDF export**.
 - **Firewall Playground** — send a malicious prompt with guardrails **ON** (watch the `BLOCKED` stamp slam in with the OWASP ref) vs **OFF** (watch it leak). The contrast *is* the demo.
+- **In-app A/B before/after** — one click runs the *same* attack with guardrails off then on and renders the leaked-vs-blocked contrast side by side (`POST /proxy/ab`). The headline "83% ASR reduction" is now a live product surface, not just an offline eval script.
+- **Live firewall feed** — a real-time stream of every proxy block, consuming the `/proxy/activity/stream` SSE endpoint.
+- **Accounts & API keys** — register for a personal API key, sign in (JWT), and get account-scoped targets/runs/reports; a shared **demo mode** keeps everything usable with zero signup.
+- **Light / dark theme** — a first-class, no-flash theme toggle (system-preference aware, persisted) across the whole app.
 - **Dashboard** — posture trend over time, per-category failure-cluster scatter, and a live firewall-activity feed.
 - **Model Card** — the classifier confusion matrix, guardrail A/B chart, judge golden-set results, and RAG grounding table, live from the eval reports.
 
@@ -103,7 +107,9 @@ Every headline number is produced by a reproducible eval harness in [`backend/ev
 │                  ├── hybrid RAG retriever → pgvector threat catalog  │
 │                  └── deberta injection classifier (local)           │
 │    /proxy  → Guardrail pipeline (input scan → target → output scan)  │
-│    core: JWT + hashed API keys · rate limit · append-only audit log  │
+│    /auth   → register / issue API key · JWT · account-scoped data    │
+│    core: JWT + bcrypt API keys · Fernet-encrypted target secrets ·   │
+│          security headers + body cap · rate limit · audit log        │
 └───────────────┬─────────────────────────────────────────────────────┘
                 │
       ┌─────────▼──────────┐

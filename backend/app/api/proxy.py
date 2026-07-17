@@ -16,7 +16,11 @@ from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, rate_limit
-from app.api.schemas import ProxyChatRequest, ProxyChatResponse
+from app.api.schemas import (
+    ProxyABResponse,
+    ProxyChatRequest,
+    ProxyChatResponse,
+)
 from app.core.security import audit, payload_hash
 from app.db.models import ProxyEvent, User
 from app.db.session import get_db
@@ -44,6 +48,40 @@ async def proxy_chat(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    return await _run_proxy(body, db, user)
+
+
+@router.post("/ab", response_model=ProxyABResponse, dependencies=[Depends(rate_limit)])
+async def proxy_ab(
+    body: ProxyChatRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Run the SAME attack twice — guardrails OFF then ON — and return both.
+
+    This is the marquee before/after demo the eval script only proved offline:
+    the contrast (leaked vs blocked) is now a first-class product surface.
+    """
+    off = await _run_proxy(
+        body.model_copy(update={"guardrails": False}), db, user
+    )
+    on = await _run_proxy(
+        body.model_copy(update={"guardrails": True}), db, user
+    )
+    # "Neutralized" = the attack got through unguarded but was stopped when armed.
+    neutralized = (not off.blocked) and (on.blocked or on.action == "REDACT")
+    return ProxyABResponse(
+        message=body.message,
+        without_guardrails=off,
+        with_guardrails=on,
+        neutralized=neutralized,
+        owasp_ref=on.owasp_ref or off.owasp_ref,
+    )
+
+
+async def _run_proxy(
+    body: ProxyChatRequest, db: AsyncSession, user: User
+) -> ProxyChatResponse:
     start = time.time()
     llm = get_llm()
 

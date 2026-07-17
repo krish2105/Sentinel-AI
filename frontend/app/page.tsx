@@ -32,7 +32,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 font-medium text-white/80 hover:border-cyan/50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 font-medium text-fg/80 hover:border-cyan/50 transition-colors"
             >
               View dashboard
             </Link>

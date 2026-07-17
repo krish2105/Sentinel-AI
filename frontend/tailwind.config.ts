@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -9,17 +10,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        base: "#0A0B0F",
-        surface: "#12141C",
-        "surface-2": "#181B26",
-        line: "#232838",
+        // Semantic tokens backed by CSS variables (space-separated RGB channels),
+        // so Tailwind opacity modifiers (bg-cyan/10) keep working and the whole
+        // palette re-themes for light/dark by swapping variables. See globals.css.
+        base: "rgb(var(--c-base) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        "surface-2": "rgb(var(--c-surface-2) / <alpha-value>)",
+        line: "rgb(var(--c-line) / <alpha-value>)",
+        fg: "rgb(var(--c-fg) / <alpha-value>)",
         cyan: {
-          DEFAULT: "#22E9D3",
-          soft: "#22E9D3",
+          DEFAULT: "rgb(var(--c-cyan) / <alpha-value>)",
+          soft: "rgb(var(--c-cyan) / <alpha-value>)",
         },
-        danger: "#FF4D5E",
-        warning: "#FFB020",
-        muted: "#8A93A6",
+        danger: "rgb(var(--c-danger) / <alpha-value>)",
+        warning: "rgb(var(--c-warning) / <alpha-value>)",
+        muted: "rgb(var(--c-muted) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],

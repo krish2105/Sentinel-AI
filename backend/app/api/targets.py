@@ -1,15 +1,13 @@
 """Target registry CRUD."""
 from __future__ import annotations
 
-import json
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.api.schemas import TargetCreate, TargetOut
-from app.core.security import audit, normalize_unicode
+from app.core.security import audit, encrypt_headers, normalize_unicode
 from app.db.models import Target, User
 from app.db.session import get_db
 
@@ -22,9 +20,8 @@ async def create_target(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    headers_enc = (
-        json.dumps(body.endpoint_headers) if body.endpoint_headers else None
-    )
+    # Endpoint headers hold live-target API keys — encrypt at rest (Fernet).
+    headers_enc = encrypt_headers(body.endpoint_headers)
     target = Target(
         user_id=user.id,
         name=body.name[:120],

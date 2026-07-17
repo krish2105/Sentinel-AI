@@ -6,16 +6,19 @@ normalization to defeat hidden-character attacks.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
+import json
 import secrets
 import time
 import unicodedata
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
-from typing import Deque, Dict
+from typing import Deque, Dict, Optional
 
 import jwt
+from cryptography.fernet import Fernet, InvalidToken
 from passlib.context import CryptContext
 
 from app.config import settings
@@ -23,6 +26,58 @@ from app.db.models import AuditLog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+# --- Secret encryption at rest (Fernet) -------------------------------------
+def _fernet() -> Fernet:
+    """Build a Fernet cipher from the configured key.
+
+    Uses ``header_encryption_key`` when set; otherwise deterministically derives
+    a key from ``jwt_secret`` so the platform still encrypts secrets at rest in
+    zero-config local mode. Set a dedicated key in production.
+    """
+    raw = settings.header_encryption_key or settings.jwt_secret
+    digest = hashlib.sha256(raw.encode("utf-8")).digest()
+    return Fernet(base64.urlsafe_b64encode(digest))
+
+
+def encrypt_secret(plaintext: str) -> str:
+    return _fernet().encrypt(plaintext.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_secret(token: str) -> Optional[str]:
+    try:
+        return _fernet().decrypt(token.encode("utf-8")).decode("utf-8")
+    except (InvalidToken, ValueError, TypeError):
+        return None
+
+
+def encrypt_headers(headers: Optional[dict]) -> Optional[str]:
+    """Encrypt a headers dict to an opaque token for storage."""
+    if not headers:
+        return None
+    return encrypt_secret(json.dumps(headers))
+
+
+def decrypt_headers(token: Optional[str]) -> dict:
+    """Decrypt a stored headers token back to a dict.
+
+    Tolerates legacy plaintext-JSON rows written before encryption landed, so an
+    existing DB keeps working after upgrade.
+    """
+    if not token:
+        return {}
+    plain = decrypt_secret(token)
+    if plain is None:
+        # Legacy fallback: value predates encryption and is raw JSON.
+        try:
+            return json.loads(token)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    try:
+        return json.loads(plain)
+    except (json.JSONDecodeError, TypeError):
+        return {}
 
 
 # --- API keys ---------------------------------------------------------------

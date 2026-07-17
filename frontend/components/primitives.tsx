@@ -76,7 +76,7 @@ export function PayloadViewer({
           </button>
         </div>
       )}
-      <pre className="mono text-[12px] leading-relaxed p-3 whitespace-pre-wrap break-words text-white/80 max-h-52 overflow-auto">
+      <pre className="mono text-[12px] leading-relaxed p-3 whitespace-pre-wrap break-words text-fg/80 max-h-52 overflow-auto">
         {text}
       </pre>
     </div>

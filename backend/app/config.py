@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24
 
+    # --- Secret encryption at rest ---
+    # Used to Fernet-encrypt live-target endpoint headers (API keys) in the DB.
+    # Blank => derived from jwt_secret (still encrypted). Set a dedicated key in prod.
+    header_encryption_key: str = Field(default="")
+
+    # --- Security middleware ---
+    # Comma-separated allowed Host header values. "*" disables the check (default
+    # for zero-config local dev). Set to your real hostnames in production.
+    trusted_hosts: List[str] = Field(default=["*"])
+    max_request_bytes: int = Field(default=1_000_000)  # 1 MB request body cap
+    security_headers_enabled: bool = Field(default=True)
+
     # --- CORS ---
     cors_origins: List[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"]
@@ -80,7 +92,7 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = Field(default="")
     langfuse_host: str = Field(default="https://cloud.langfuse.com")
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "trusted_hosts", mode="before")
     @classmethod
     def _split_origins(cls, v):
         if isinstance(v, str):

@@ -25,7 +25,7 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
     >
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/[0.02] transition-colors"
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-fg/[0.02] transition-colors"
       >
         {exploited ? (
           <ShieldAlert className="h-5 w-5 text-danger shrink-0" />
@@ -35,7 +35,7 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium">{label(attack.category)}</span>
-            <span className="mono text-[10px] text-muted px-1.5 py-0.5 rounded bg-white/5">
+            <span className="mono text-[10px] text-muted px-1.5 py-0.5 rounded bg-fg/5">
               {attack.owasp_ref}
             </span>
           </div>
@@ -72,14 +72,14 @@ export function FindingCard({ attack, index }: { attack: Attack; index: number }
                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-cyan mb-1">
                     <BookMarked className="h-3 w-3" /> Grounded citation
                   </div>
-                  <p className="text-xs text-white/70 leading-relaxed">{attack.citation}</p>
+                  <p className="text-xs text-fg/70 leading-relaxed">{attack.citation}</p>
                 </div>
               )}
               <div className="rounded-lg bg-surface-2 border border-line p-3">
                 <div className="text-[10px] uppercase tracking-widest text-muted mb-1">
                   Recommended mitigation
                 </div>
-                <p className="text-sm text-white/85">{attack.mitigation}</p>
+                <p className="text-sm text-fg/85">{attack.mitigation}</p>
               </div>
             </div>
           </motion.div>

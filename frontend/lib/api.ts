@@ -46,10 +46,36 @@ export type Attack = {
   blast_radius: number;
 };
 
+export const TOKEN_KEY = "sentinel-token";
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage unavailable — falls back to demo mode */
+  }
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers || {}),
+    },
     cache: "no-store",
   });
   if (!res.ok) {
@@ -62,8 +88,40 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.status === 204 ? (undefined as T) : res.json();
 }
 
+export type ProxyResult = {
+  blocked: boolean;
+  stage: string;
+  action: string;
+  reason: string;
+  owasp_ref: string;
+  response: string;
+  classifier_score: number;
+  input_scan: any;
+  output_scan: any;
+  latency_ms: number;
+};
+
 export const api = {
-  health: () => req<{ status: string; llm_provider: string }>("/health"),
+  health: () =>
+    req<{
+      status: string;
+      llm_provider: string;
+      heavy_ml?: boolean;
+      database?: string;
+      tracing?: boolean;
+    }>("/health"),
+
+  // --- Auth ---
+  register: (email: string) =>
+    req<{ user_id: string; api_key: string; message: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+  token: (api_key: string) =>
+    req<{ access_token: string; token_type: string }>("/auth/token", {
+      method: "POST",
+      body: JSON.stringify({ api_key }),
+    }),
 
   listTargets: () => req<Target[]>("/targets"),
   getTarget: (id: string) => req<Target>(`/targets/${id}`),
@@ -123,18 +181,19 @@ export const api = {
     system_prompt: string;
     guardrails: boolean;
   }) =>
+    req<ProxyResult>("/proxy/chat", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  proxyAb: (body: { message: string; system_prompt: string }) =>
     req<{
-      blocked: boolean;
-      stage: string;
-      action: string;
-      reason: string;
+      message: string;
+      without_guardrails: ProxyResult;
+      with_guardrails: ProxyResult;
+      neutralized: boolean;
       owasp_ref: string;
-      response: string;
-      classifier_score: number;
-      input_scan: any;
-      output_scan: any;
-      latency_ms: number;
-    }>("/proxy/chat", { method: "POST", body: JSON.stringify(body) }),
+    }>("/proxy/ab", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export const ATTACK_CATEGORIES = [
