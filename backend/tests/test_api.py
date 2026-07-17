@@ -78,3 +78,45 @@ async def test_proxy_ab_contrast(client):
     off = (await client.post("/proxy/chat", json={**payload, "guardrails": False})).json()
     assert on["blocked"] is True
     assert off["blocked"] is False  # without guardrails it passes through
+
+
+@pytest.mark.asyncio
+async def test_delete_target_blocked_when_runs_exist(client):
+    """Deleting a target with existing runs must be refused, not crash.
+
+    Run.target_id is NOT NULL and the Target<->Run relationship has no
+    cascade config, so SQLAlchemy's default delete behavior (null out the
+    child FK) would otherwise violate the not-null constraint mid-commit.
+    """
+    t = await client.post(
+        "/targets",
+        json={"name": "Has Runs", "system_prompt": "You are a bot.", "tools": []},
+    )
+    target_id = t.json()["id"]
+    run = await client.post(
+        "/runs", json={"target_id": target_id, "selected_categories": ["direct_injection"]}
+    )
+    run_id = run.json()["id"]
+    async with client.stream("GET", f"/runs/{run_id}/stream") as s:
+        async for line in s.aiter_lines():
+            if "run_completed" in line:
+                break
+
+    resp = await client.delete(f"/targets/{target_id}")
+    assert resp.status_code == 409
+    assert "run(s) reference it" in resp.json()["detail"]
+
+    # target still exists and is fully functional afterward
+    still_there = await client.get(f"/targets/{target_id}")
+    assert still_there.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_delete_target_without_runs_succeeds(client):
+    t = await client.post(
+        "/targets",
+        json={"name": "No Runs", "system_prompt": "You are a bot.", "tools": []},
+    )
+    target_id = t.json()["id"]
+    resp = await client.delete(f"/targets/{target_id}")
+    assert resp.status_code == 204

@@ -180,8 +180,12 @@ function TargetRow({
       </button>
       <button
         onClick={async () => {
-          await api.deleteTarget(target.id);
-          onDeleted();
+          try {
+            await api.deleteTarget(target.id);
+            onDeleted();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Couldn't delete target.", "error");
+          }
         }}
         className="text-muted hover:text-danger transition-colors p-2"
         aria-label="Delete target"

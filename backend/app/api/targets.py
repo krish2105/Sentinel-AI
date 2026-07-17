@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import func
+
 from app.api.deps import get_current_user
 from app.api.schemas import TargetCreate, TargetOut
 from app.core.security import audit, encrypt_headers, normalize_unicode
-from app.db.models import Target, User
+from app.db.models import Run, Target, User
 from app.db.session import get_db
 
 router = APIRouter(prefix="/targets", tags=["targets"])
@@ -72,6 +74,26 @@ async def delete_target(
     target = await db.get(Target, target_id)
     if not target or target.user_id != user.id:
         raise HTTPException(status_code=404, detail="Target not found.")
+
+    # Run.target_id is NOT NULL, and the relationship has no cascade config,
+    # so deleting a target with existing runs would otherwise crash mid-commit
+    # (SQLAlchemy's default cascade tries to null out target_id on each Run,
+    # violating the not-null constraint). Refuse instead — for a security
+    # tool, silently orphaning or losing historical run data is the wrong
+    # failure mode anyway; the user should delete the runs first if they
+    # really want the target gone.
+    run_count = (
+        await db.execute(select(func.count()).where(Run.target_id == target_id))
+    ).scalar_one()
+    if run_count:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Cannot delete '{target.name}': {run_count} run(s) reference it. "
+                "Delete those runs first if you want to remove this target."
+            ),
+        )
+
     await db.delete(target)
     await db.commit()
     await audit(db, actor=user.email, action="target.delete", meta={"target_id": target_id})
